@@ -50,3 +50,7 @@ A interface mostra os controles que o navegador reporta via Gamepad API. Ausênc
 ## Hospedagem
 
 GitHub Pages hospeda os arquivos estáticos. ROMs e saves não são enviados pelo fluxo de deploy. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem. Seleção de ROM é iniciada pelo usuário em cada aparelho e limitada aos arquivos escolhidos no seletor nativo.
+
+## PS1: entrada direta e controles de toque
+
+O EmulatorJS está configurado para iniciar o conteúdo assim que o usuário selecionar **Iniciar jogo** (`EJS_startOnLoaded`) e mantém o botão `settings` na barra para acesso opcional às configurações. A ROM local usa URL Blob com a extensão original no nome de jogo, necessária à detecção de formato pelo core. O controle virtual pode usar D-pad, analógico ou ambos; cada elemento pode ser reposicionado por X/Y no painel da página, com preferências locais aplicadas ao iniciar a próxima sessão. CSS usa unidades relativas à viewport para adaptar os controles a retrato e paisagem. Esses ajustes ainda precisam ser validados com jogo real em navegador móvel; a interface do core aparecer sem o conteúdo significa que o carregamento do jogo não foi bem-sucedido.

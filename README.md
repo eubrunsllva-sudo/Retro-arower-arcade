@@ -55,3 +55,7 @@ A página inclui um diagnóstico pela Gamepad API. Conecte o controle antes ou d
 ### Tela cheia no celular
 
 Na sessão do jogo, toque em **Tela cheia**. Em iPhone, o navegador pode não oferecer a API de tela cheia para elementos comuns da página; o site usa um modo expandido próprio que ocupa o viewport disponível e mantém **Sair da tela cheia** visível. As barras do Safari podem continuar aparecendo. Gire o aparelho manualmente para paisagem quando preferir; o site não força orientação.
+
+## Controles virtuais PS1 e menu do core
+
+A tela deve iniciar diretamente o conteúdo selecionado por meio da opção pública `EJS_startOnLoaded`; as configurações do EmulatorJS continuam acessíveis pelo botão `settings` na barra. O projeto não inclui BIOS. D-pad, analógico ou ambos podem ser escolhidos; posições individuais são guardadas localmente e passam a valer ao iniciar outra sessão. O estilo responsivo reduz os elementos em paisagem com pouca altura. A API de toque, a proporção visual e o boot real ainda precisam teste físico em iPhone/iPad.

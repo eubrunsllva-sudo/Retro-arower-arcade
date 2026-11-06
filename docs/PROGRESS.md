@@ -149,3 +149,12 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Mídias PS1 grandes (>=300 MiB) em iPhone/iPad agora mostram aviso antes de empacotar; CHD pode reduzir pressão de memória. O tamanho é heurístico, sem afirmar que o navegador terá memória suficiente.
 - Novo caminho móvel para CUE/M3U: abre o arquivo de índice diretamente e passa cada faixa companion como URL Blob individual via `EJS_externalFiles`; evita ler um ZIP completo em ArrayBuffer e depois manter a extração do disco em paralelo. Imagens `.chd/.pbp/.iso` também são passadas diretamente. Desktop continua com ZIP local para conjuntos multipartes.
 - Verificação estática: `node --check src/app.js`, `git diff --check`. Sem teste físico no iPhone/iPad; não afirmar que o bug de suspensão foi eliminado antes desse teste.
+
+## 2026-11-06 — Inicialização direta do PS1 e controles móveis
+
+- Mantida a inicialização automática do conteúdo (`EJS_startOnLoaded`) após o usuário tocar em **Iniciar jogo**; o botão Configurações do EmulatorJS continua habilitado na barra para abrir o menu somente quando desejado. A documentação upstream confirma que `EJS_gameUrl` deve ser URL e que `EJS_startOnLoaded` inicia o jogo sem outro passo.
+- Para PS1, a URL Blob é acompanhada pelo nome real do arquivo com extensão. Isso é necessário para o core reconhecer o tipo de CUE/M3U/CHD/PBP/ISO ao carregar conteúdo local.
+- Os controles virtuais do PS1 agora têm dimensões responsivas por viewport e regra específica para paisagem baixa; D-pad, analógico ou ambos e posições individuais seguem configuráveis e salvos no navegador. O ajuste é aplicado na próxima sessão.
+- Estilizado o painel de configuração de posições e removido o uso de `structuredClone` para suportar navegadores que ainda não oferecem essa API.
+- Resultado estático: `node --check src/app.js`. Limite: não há ROM/BIOS disponível nesta tarefa nem acesso a iPhone físico; ainda é necessário confirmar o boot do jogo e o toque em retrato/paisagem no aparelho. Se o core continuar no menu principal, isso significa que a etapa de leitura do conteúdo ainda falhou; não classificar como jogo iniciado apenas porque o core abriu.
+- Referências: [opções EmulatorJS (`EJS_startOnLoaded`, `EJS_gameUrl`, `EJS_Buttons`)](https://emulatorjs.org/docs/options/) e [mapeamento do controle virtual](https://emulatorjs.org/docs4devs/virtual-gamepad-settings/).

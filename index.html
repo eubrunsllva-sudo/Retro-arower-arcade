@@ -59,6 +59,24 @@
             <div><span class="eyebrow">CONTROLE</span><strong id="gamepad-title">Diagnóstico do gamepad</strong><span id="gamepad-status" role="status" aria-live="polite">Aguardando controle Bluetooth/USB…</span></div>
             <button class="secondary-button" id="gamepad-refresh" type="button">VERIFICAR CONTROLE</button>
           </section>
+          <section class="touch-control-settings" aria-labelledby="touch-controls-title">
+            <span class="eyebrow">CONTROLES NA TELA · PS1</span>
+            <strong id="touch-controls-title">Escolha seu direcional e ajuste o layout</strong>
+            <label for="touch-mode">DIRECIONAL
+              <select id="touch-mode"><option value="dpad">D-pad</option><option value="analog">Analógico deslizante</option><option value="both">D-pad + analógico</option></select>
+            </label>
+            <label for="touch-control">CONTROLE PARA POSICIONAR
+              <select id="touch-control"><option value="dpad">D-pad</option><option value="stick">Analógico</option><option value="a">A</option><option value="b">B</option><option value="x">X</option><option value="y">Y</option><option value="l">L1</option><option value="r">R1</option><option value="select">Select</option><option value="start">Start</option></select>
+            </label>
+            <label for="touch-x">POSIÇÃO HORIZONTAL <output id="touch-x-value">50%</output>
+              <input id="touch-x" type="range" min="0" max="100" value="50" />
+            </label>
+            <label for="touch-y">POSIÇÃO VERTICAL <output id="touch-y-value">50%</output>
+              <input id="touch-y" type="range" min="0" max="100" value="50" />
+            </label>
+            <p id="touch-control-position" role="status">Ajustes salvos neste aparelho e aplicados na próxima sessão PS1. Os controles se ajustam à orientação da tela.</p>
+            <button class="secondary-button" id="touch-reset" type="button">RESTAURAR POSIÇÕES PADRÃO</button>
+          </section>
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
@@ -79,7 +97,7 @@
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
         <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><button id="toggle-fullscreen" class="secondary-button fullscreen-toggle" type="button" aria-pressed="false">TELA CHEIA</button><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
-        <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. No EmulatorJS, abra Configurações → Controles para mapear os botões. Se o iPega não aparecer, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, a conexão Bluetooth e a Gamepad API dependem do navegador, sistema e modo do controle. O controle virtual pode ser ativado pela barra do emulador. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
+        <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. O jogo deve abrir diretamente; para ajustes, use o botão Configurações na barra do emulador. Se o iPega não aparecer, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, a conexão Bluetooth e a Gamepad API dependem do navegador, sistema e modo do controle. O controle virtual pode ser ativado pela barra do emulador. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
       </section>
 
       <section class="save-strip">

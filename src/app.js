@@ -26,6 +26,7 @@ let pendingGame = null;
 let selectionSequence = 0;
 let ps1BiosUrl = '';
 let activeExternalUrls = [];
+let activeGameUrl = '';
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
@@ -41,6 +42,85 @@ const PS1_DEFAULT_CONTROLS = {
     20: { value: 'l', value2: 'RIGHT_STICK_X:+1' }, 21: { value: 'j', value2: 'RIGHT_STICK_X:-1' }, 22: { value: 'k', value2: 'RIGHT_STICK_Y:+1' }, 23: { value: 'i', value2: 'RIGHT_STICK_Y:-1' } },
   1: {}, 2: {}, 3: {},
 };
+const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v1';
+const DEFAULT_TOUCH_LAYOUT = {
+  mode: 'both',
+  controls: {
+    dpad: { x: 22, y: 50 }, stick: { x: 78, y: 50 },
+    a: { x: 60, y: 70 }, b: { x: 15, y: 48 }, x: { x: 15, y: 5 }, y: { x: 60, y: 5 },
+    l: { x: 12, y: 0 }, r: { x: 70, y: 0 }, select: { x: 10, y: 35 }, start: { x: 60, y: 35 },
+  },
+};
+const TOUCH_CONTROL_LABELS = { dpad: 'D-pad', stick: 'Analógico', a: 'A', b: 'B', x: 'X', y: 'Y', l: 'L1', r: 'R1', select: 'Select', start: 'Start' };
+
+function readTouchLayout() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(TOUCH_LAYOUT_KEY));
+    return { ...DEFAULT_TOUCH_LAYOUT, ...stored, controls: { ...DEFAULT_TOUCH_LAYOUT.controls, ...stored?.controls } };
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)); }
+}
+
+let touchLayout = readTouchLayout();
+
+function saveTouchLayout() {
+  const mode = document.querySelector('#touch-mode').value;
+  touchLayout.mode = mode;
+  const control = document.querySelector('#touch-control').value;
+  touchLayout.controls[control] = {
+    x: Number(document.querySelector('#touch-x').value),
+    y: Number(document.querySelector('#touch-y').value),
+  };
+  localStorage.setItem(TOUCH_LAYOUT_KEY, JSON.stringify(touchLayout));
+  document.querySelector('#touch-control-position').textContent = `${TOUCH_CONTROL_LABELS[control]}: X ${touchLayout.controls[control].x}% · Y ${touchLayout.controls[control].y}% — salvo neste aparelho; vale na próxima sessão.`;
+}
+
+function loadTouchControlPosition() {
+  const control = document.querySelector('#touch-control').value;
+  const position = touchLayout.controls[control] || { x: 50, y: 50 };
+  document.querySelector('#touch-x').value = position.x;
+  document.querySelector('#touch-y').value = position.y;
+  document.querySelector('#touch-x-value').textContent = `${position.x}%`;
+  document.querySelector('#touch-y-value').textContent = `${position.y}%`;
+}
+
+function buildPs1VirtualGamepad() {
+  const controls = touchLayout.controls;
+  const pct = (id, axis) => `${Math.max(0, Math.min(100, Number(controls[id]?.[axis] ?? 50)))}%`;
+  const items = [
+    { type: 'button', text: 'A', id: 'a', location: 'right', left: pct('a', 'x'), top: pct('a', 'y'), input_value: 8, bold: true },
+    { type: 'button', text: 'B', id: 'b', location: 'right', left: pct('b', 'x'), top: pct('b', 'y'), input_value: 0, bold: true },
+    { type: 'button', text: 'X', id: 'x', location: 'right', left: pct('x', 'x'), top: pct('x', 'y'), input_value: 9, bold: true },
+    { type: 'button', text: 'Y', id: 'y', location: 'right', left: pct('y', 'x'), top: pct('y', 'y'), input_value: 1, bold: true },
+    { type: 'button', text: 'L1', id: 'l', location: 'left', left: pct('l', 'x'), top: pct('l', 'y'), input_value: 10, fontSize: 16, bold: true },
+    { type: 'button', text: 'R1', id: 'r', location: 'right', left: pct('r', 'x'), top: pct('r', 'y'), input_value: 11, fontSize: 16, bold: true },
+    { type: 'button', text: 'Select', id: 'select', location: 'center', left: pct('select', 'x'), top: pct('select', 'y'), input_value: 2, fontSize: 14, block: true },
+    { type: 'button', text: 'Start', id: 'start', location: 'center', left: pct('start', 'x'), top: pct('start', 'y'), input_value: 3, fontSize: 14, block: true },
+  ];
+  if (touchLayout.mode === 'dpad' || touchLayout.mode === 'both') {
+    items.push({ type: 'dpad', id: 'dpad', location: 'left', left: pct('dpad', 'x'), top: pct('dpad', 'y'), joystickInput: false, inputValues: [4, 5, 6, 7] });
+  }
+  if (touchLayout.mode === 'analog' || touchLayout.mode === 'both') {
+    items.push({ type: 'zone', id: 'stick', location: 'left', left: pct('stick', 'x'), top: pct('stick', 'y'), joystickInput: true, inputValues: [19, 18, 17, 16] });
+  }
+  return items;
+}
+
+document.querySelector('#touch-mode').value = touchLayout.mode;
+document.querySelector('#touch-control').addEventListener('change', loadTouchControlPosition);
+for (const axis of ['x', 'y']) {
+  document.querySelector(`#touch-${axis}`).addEventListener('input', () => {
+    document.querySelector(`#touch-${axis}-value`).textContent = `${document.querySelector(`#touch-${axis}`).value}%`;
+  });
+  document.querySelector(`#touch-${axis}`).addEventListener('change', saveTouchLayout);
+}
+document.querySelector('#touch-mode').addEventListener('change', saveTouchLayout);
+document.querySelector('#touch-reset').addEventListener('click', () => {
+  touchLayout = JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT));
+  document.querySelector('#touch-mode').value = touchLayout.mode;
+  loadTouchControlPosition();
+  saveTouchLayout();
+});
+loadTouchControlPosition();
 
 grid.innerHTML = systems.map((system, index) => `
   <article class="console-card ${system.color} ${system.active ? 'console-active' : ''}">
@@ -510,7 +590,10 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   const gameId = await stableGameId(file, system.id);
   // EmulatorJS's own demo accepts File objects directly. Keep the original filename
   // for disc-based cores that infer the image format from its extension.
-  const gameUrl = system.id === 'ps1' ? file : URL.createObjectURL(file);
+  // EmulatorJS 4.2.3 expects a URL here. Passing a File directly can leave
+  // PCSX-ReARMed at the RetroArch menu because the core receives a bad ROM path.
+  const gameUrl = URL.createObjectURL(file);
+  activeGameUrl = gameUrl;
   activeExternalUrls = Object.values(externalFiles).map((asset) => URL.createObjectURL(asset));
   const externalFileMap = Object.fromEntries(Object.keys(externalFiles).map((path, index) => [path, activeExternalUrls[index]]));
   running = true;
@@ -521,7 +604,9 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     EJS_core: system.core,
     EJS_biosUrl: system.id === 'ps1' ? ps1BiosUrl : '',
     EJS_gameUrl: gameUrl,
-    EJS_gameName: title,
+    // Preserve the real extension in the filename passed to RetroArch. For a
+    // direct CUE/M3U/CHD this determines the content type; the app header uses title.
+    EJS_gameName: system.id === 'ps1' ? file.name : title,
     EJS_gameID: gameId,
     EJS_pathtodata: EJS_DATA,
     ...(Object.keys(externalFileMap).length ? { EJS_externalFiles: externalFileMap } : {}),
@@ -529,6 +614,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     EJS_color: '#d6fa6a',
     EJS_fixedSaveInterval: 30000,
     ...(system.id === 'ps1' ? { EJS_defaultControls: PS1_DEFAULT_CONTROLS } : {}),
+    ...(system.id === 'ps1' ? { EJS_VirtualGamepadSettings: buildPs1VirtualGamepad() } : {}),
     EJS_Buttons: {
       playPause: true,
       restart: true,
@@ -542,6 +628,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     },
     EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
     EJS_onGameStart: () => {
+      releaseGameObjectUrl();
       releaseExternalObjectUrls();
       status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`;
       requestAnimationFrame(resizeEmulatorViewport);
@@ -555,7 +642,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   script.onerror = () => {
     status.textContent = 'Não foi possível carregar o núcleo. Verifique a conexão e recarregue a página.';
     running = false;
-    if (typeof gameUrl === 'string' && gameUrl.startsWith('blob:')) URL.revokeObjectURL(gameUrl);
+    releaseGameObjectUrl();
     releaseExternalObjectUrls();
   };
   document.head.append(script);
@@ -569,6 +656,11 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
 function releaseExternalObjectUrls() {
   activeExternalUrls.forEach((url) => URL.revokeObjectURL(url));
   activeExternalUrls = [];
+}
+
+function releaseGameObjectUrl() {
+  if (activeGameUrl) URL.revokeObjectURL(activeGameUrl);
+  activeGameUrl = '';
 }
 
 async function stableGameId(file, systemId) {
