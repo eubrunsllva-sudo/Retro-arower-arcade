@@ -9,6 +9,10 @@ const systems = [
 
 const EJS_VERSION = '4.2.3';
 const EJS_DATA = `https://cdn.emulatorjs.org/${EJS_VERSION}/data/`;
+const ps1DebugEnabled = new URLSearchParams(location.search).get('debug') === '1';
+function logPs1Diagnostic(stage, details = {}) {
+  if (ps1DebugEnabled) console.info(`[Retro PS1] ${stage}`, details);
+}
 const grid = document.querySelector('#console-grid');
 const fileInput = document.querySelector('#game-file');
 const folderInput = document.querySelector('#game-folder');
@@ -572,11 +576,15 @@ async function buildExternalDiscAssets(candidate) {
     const cueText = await readDiscText(cue);
     const refs = [...cueText.matchAll(/^\s*FILE\s+(?:"([^"]+)"|([^\s]+))\s+[^\r\n]+/gim)].map((match) => match[1] || match[2]);
     const cueDir = cuePath.includes('/') ? cuePath.slice(0, cuePath.lastIndexOf('/')) : '';
+    const resolvedRefs = [];
     for (const ref of refs) {
       const file = resolveDiscReference(ref, cue, selected);
       if (!file) throw new Error(`Faixa não encontrada ao montar os arquivos locais: ${ref}`);
-      assets.set(normalizeDiscPath([cueDir, ref].filter(Boolean).join('/')), file);
+      const virtualPath = normalizeDiscPath([cueDir, ref].filter(Boolean).join('/'));
+      assets.set(virtualPath, file);
+      resolvedRefs.push({ reference: ref, selectedFile: file.name, virtualPath: `/${virtualPath}`, bytes: file.size });
     }
+    logPs1Diagnostic('CUE faixas resolvidas', { cue: cue.name, bytes: cue.size, tracks: resolvedRefs });
     const base = titleFromName(cue.name).toLowerCase();
     for (const sbi of selected.filter((file) => extensionOf(file.name) === '.sbi' && titleFromName(file.name).toLowerCase() === base)) {
       assets.set(normalizeDiscPath([cueDir, sbi.name].filter(Boolean).join('/')), sbi);
@@ -828,12 +836,15 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   if (system.id === 'ps1' && ps1BiosFile) runtimeExternalFiles[`/${ps1BiosFile.name}`] = ps1BiosFile;
   activeExternalUrls = Object.values(runtimeExternalFiles).map((asset) => URL.createObjectURL(asset));
   const externalFileMap = Object.fromEntries(Object.keys(runtimeExternalFiles).map((path, index) => [path, activeExternalUrls[index]]));
+  logPs1Diagnostic('Arquivos que serão montados no VFS', Object.entries(runtimeExternalFiles).map(([path, asset]) => ({ path, name: asset.name, bytes: asset.size })));
+  logPs1Diagnostic('ROM selecionada para o core', { name: file.name, bytes: file.size, type: file.type, urlScheme: new URL(gameUrl).protocol });
   running = true;
   const gamepadIndexFix = system.id === 'ps1' ? installGamepadIndexCompatibility() : false;
 
   Object.assign(window, {
     EJS_player: '#game-screen',
     EJS_core: system.core,
+    ...(system.id === 'ps1' ? { EJS_DEBUG_XX: ps1DebugEnabled } : {}),
     // Blob URLs have random filenames; downloading a BIOS through biosUrl
     // therefore hides its required scph*.bin filename from PCSX-ReARMed.
     // Place the user-selected BIOS via externalFiles at its original name.
@@ -863,16 +874,30 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       saveSavFiles: true,
       loadSavFiles: true,
     },
-    EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
+    EJS_ready: () => {
+      status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`;
+      logPs1Diagnostic('EmulatorJS pronto', { core: system.core, gameName: file.name, externalPaths: Object.keys(runtimeExternalFiles) });
+    },
     EJS_onGameStart: () => {
-      releaseGameObjectUrl();
-      releaseExternalObjectUrls();
+      // Keep Blob URLs alive for the entire session: EmulatorJS may still be
+      // reading referenced disc tracks after its startup callback fires.
       if (system.id === 'ps1') {
         initializePs1TouchControls();
         const emulator = window.EJS_emulator;
         const path = emulator?.fileName ? `/${emulator.fileName}` : '';
         let mounted = false;
         try { mounted = Boolean(path && emulator.gameManager.FS.analyzePath(path).exists); } catch { /* Keep a clear fallback status. */ }
+        const fs = emulator?.gameManager?.FS;
+        const mountedAssets = Object.entries(runtimeExternalFiles).map(([assetPath, asset]) => {
+          const fsPath = asset === ps1BiosFile ? `/system/${asset.name}` : (assetPath.startsWith('/') ? assetPath : `/${assetPath}`);
+          try {
+            const stat = fs.stat(fsPath);
+            return { path: fsPath, expectedBytes: asset.size, found: true, actualBytes: stat.size };
+          } catch (error) {
+            return { path: fsPath, expectedBytes: asset.size, found: false, error: error?.message || String(error) };
+          }
+        });
+        logPs1Diagnostic('Estado dos arquivos no VFS após iniciar', { gamePath: path, gameFound: mounted, assets: mountedAssets });
         status.textContent = mounted
           ? `PCSX-ReARMed abriu · arquivo presente no core: ${emulator.fileName} · jogo ainda não confirmado; se o menu continuar, a ROM não iniciou.`
           : `Core PS1 abriu, mas não confirmou a ROM (${emulator?.fileName || 'arquivo não identificado'}). Verifique o conjunto CUE/BIN.`;
@@ -1019,10 +1044,20 @@ function reportRuntimeFailure(message) {
   document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 180)}. Em iPhone/iPad, arquivos PS1 grandes podem exceder a memória disponível.`;
 }
 
-window.addEventListener('error', (event) => reportRuntimeFailure(event.message || 'erro de execução'));
+window.addEventListener('error', (event) => {
+  const message = event.message || 'erro de execução';
+  logPs1Diagnostic('Erro JavaScript global', { message, source: event.filename, line: event.lineno, column: event.colno, stack: event.error?.stack });
+  reportRuntimeFailure(message);
+});
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
-  reportRuntimeFailure(reason instanceof Error ? reason.message : String(reason || 'falha assíncrona'));
+  const message = reason instanceof Error ? reason.message : String(reason || 'falha assíncrona');
+  logPs1Diagnostic('Promise rejeitada sem tratamento', { message, stack: reason?.stack });
+  reportRuntimeFailure(message);
+});
+window.addEventListener('pagehide', () => {
+  releaseGameObjectUrl();
+  releaseExternalObjectUrls();
 });
 
 document.addEventListener('visibilitychange', handleEmulatorVisibility);

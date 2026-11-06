@@ -205,3 +205,10 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Os BIN companheiros do CUE no fluxo iOS são lidos em amostras antes de iniciar o core; falha do provedor de arquivos passa a aparecer antes da tela do RetroArch.
 - O atalho de configurações foi movido para junto do botão de sair da tela cheia, no canto superior esquerdo, e o rótulo de sair foi encurtado. O identificador do CSS foi renovado para que Safari baixe a posição atualizada sem cache antigo.
 - Fontes: [opções oficiais EmulatorJS (`EJS_externalFiles`)](https://emulatorjs.org/docs/options/), [PCSX-ReARMed BIOS e nomes aceitos](https://docs.libretro.com/library/pcsx_rearmed/). `EJS_externalFiles` carrega os arquivos antes da ROM no código 4.2.3. A correção precisa de teste no iPhone com o arquivo BIOS/CUE/BIN do usuário; ainda não foi possível observar o boot real neste ambiente.
+
+## 2026-11-06 — Correção de diagnóstico PS1 por falha de VFS
+
+- Evidência fornecida pelo usuário: PCSX-ReARMed abre o CUE (93 bytes), mas registra `File not found in virtual FS: track1.bin`; a BIOS aparece montada em `/system/`. Isso confirma falha ao localizar uma faixa no VFS, não falta de BIOS nem pressão de memória por si só.
+- Revisão do código encontrou que as URLs Blob do CUE/faixas eram revogadas imediatamente no callback `EJS_onGameStart`. Mantidas durante a sessão para evitar invalidar uma leitura assíncrona do core; são revogadas ao sair/recarregar a página.
+- Com `?debug=1`, o app agora ativa `EJS_DEBUG_XX` e registra nome/tamanho de cada faixa resolvida, caminho virtual montado e presença/tamanho dos arquivos no VFS, além de erros JS e promises rejeitadas. Nenhum conteúdo de ROM é registrado.
+- Limitação de validação: sem conseguir observar a execução real no dispositivo, a correção do boot ainda precisa ser confirmada com o mesmo CUE/BIN. A nova telemetria deve indicar se a faixa chegou ao VFS e em qual caminho.
