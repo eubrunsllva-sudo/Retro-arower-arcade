@@ -25,6 +25,7 @@ let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
 let ps1BiosUrl = '';
+let activeExternalUrls = [];
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
@@ -232,10 +233,25 @@ async function prepareDiscCandidate(candidate, sequence) {
   ps1DiscStatus.textContent = mobileMemoryWarning || `Preparando ${candidate.title} localmente…`;
   document.querySelector('#start-game').disabled = true;
   try {
-    const archive = await createZipFile(candidate.files, candidate.title);
     if (sequence !== selectionSequence) return;
     ps1DiscChooser.hidden = true;
-    await prepareGame(archive, systems.find((system) => system.id === 'ps1'), candidate.title, sequence);
+    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const needsExternalAssets = isAppleMobile && ['.cue', '.m3u'].includes(extensionOf(candidate.entry?.name || ''));
+    let gameFile = candidate.entry || candidate.files[0]?.file;
+    let externalFiles = {};
+    if (needsExternalAssets) {
+      const assets = await buildExternalDiscAssets(candidate);
+      externalFiles = Object.fromEntries([...assets].map(([path, file]) => [`/${path}`, file]));
+      // Keep cue/m3u as the ROM input; companion tracks are loaded one by one
+      // into the core filesystem, avoiding a second full-size ZIP buffer on iOS.
+      gameFile = candidate.entry;
+    } else if (['.chd', '.pbp', '.iso'].includes(extensionOf(candidate.entry?.name || ''))) {
+      gameFile = candidate.entry;
+    } else {
+      gameFile = await createZipFile(candidate.files, candidate.title);
+    }
+    await prepareGame(gameFile, systems.find((system) => system.id === 'ps1'), candidate.title, sequence, externalFiles);
     ps1DiscStatus.textContent = mobileMemoryWarning || 'Conjunto de disco preparado localmente.';
     if (mobileMemoryWarning && pendingGame) {
       document.querySelector('#selected-meta').textContent += ` · ${mobileMemoryWarning}`;
@@ -247,7 +263,43 @@ async function prepareDiscCandidate(candidate, sequence) {
   }
 }
 
-async function prepareGame(file, system, title, sequence) {
+async function buildExternalDiscAssets(candidate) {
+  const selected = candidate.files.map((entry) => entry.file);
+  const assets = new Map();
+  const addCue = async (cue, virtualCuePath, isMain = false) => {
+    const cuePath = normalizeDiscPath(virtualCuePath);
+    if (!isMain) assets.set(cuePath, cue);
+    const cueText = await readDiscText(cue);
+    const refs = [...cueText.matchAll(/^\s*FILE\s+(?:"([^"]+)"|([^\s]+))\s+[^\r\n]+/gim)].map((match) => match[1] || match[2]);
+    const cueDir = cuePath.includes('/') ? cuePath.slice(0, cuePath.lastIndexOf('/')) : '';
+    for (const ref of refs) {
+      const file = resolveDiscReference(ref, cue, selected);
+      if (!file) throw new Error(`Faixa não encontrada ao montar os arquivos locais: ${ref}`);
+      assets.set(normalizeDiscPath([cueDir, ref].filter(Boolean).join('/')), file);
+    }
+    const base = titleFromName(cue.name).toLowerCase();
+    for (const sbi of selected.filter((file) => extensionOf(file.name) === '.sbi' && titleFromName(file.name).toLowerCase() === base)) {
+      assets.set(normalizeDiscPath([cueDir, sbi.name].filter(Boolean).join('/')), sbi);
+    }
+  };
+
+  const entryExt = extensionOf(candidate.entry?.name || '');
+  if (entryExt === '.cue') {
+    await addCue(candidate.entry, candidate.entry.name, true);
+  } else if (entryExt === '.m3u') {
+    const content = await readDiscText(candidate.entry);
+    const refs = content.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
+    for (const ref of refs) {
+      const file = resolveDiscReference(ref, candidate.entry, selected);
+      if (!file) throw new Error(`Disco não encontrado na lista multidisco: ${ref}`);
+      if (extensionOf(file.name) === '.cue') await addCue(file, ref);
+      else assets.set(normalizeDiscPath(ref), file);
+    }
+  }
+  return assets;
+}
+
+async function prepareGame(file, system, title, sequence, externalFiles = {}) {
   document.querySelector('#selected-name').textContent = title;
   document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · arquivos permanecem neste dispositivo`;
   document.querySelector('#selected-system').textContent = system.short;
@@ -269,7 +321,7 @@ async function prepareGame(file, system, title, sequence) {
     showSelectionError('Encerre a sessão atual antes de iniciar outro jogo. Recarregue a página e escolha a nova ROM.');
     return;
   }
-  pendingGame = { file, system, title };
+  pendingGame = { file, system, title, externalFiles };
   document.querySelector('#start-game').disabled = false;
   document.querySelector('#selection-message').textContent = 'Leitura local confirmada. Pressione “Iniciar jogo”.';
   document.querySelector('#start-hint').textContent = `Pronto para iniciar: ${title}`;
@@ -435,7 +487,7 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   notice.hidden = true;
   document.querySelector('#start-hint').textContent = 'Preparando a ROM e iniciando o núcleo…';
   try {
-    await startGame(game.file, game.system, game.title);
+    await startGame(game.file, game.system, game.title, game.externalFiles);
   } catch (error) {
     running = false;
     const message = error instanceof Error ? error.message : String(error);
@@ -447,7 +499,7 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   fileInput.value = '';
 });
 
-async function startGame(file, system, title = file.name) {
+async function startGame(file, system, title = file.name, externalFiles = {}) {
   player.hidden = false;
   player.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.querySelector('#player-title').textContent = title;
@@ -459,6 +511,8 @@ async function startGame(file, system, title = file.name) {
   // EmulatorJS's own demo accepts File objects directly. Keep the original filename
   // for disc-based cores that infer the image format from its extension.
   const gameUrl = system.id === 'ps1' ? file : URL.createObjectURL(file);
+  activeExternalUrls = Object.values(externalFiles).map((asset) => URL.createObjectURL(asset));
+  const externalFileMap = Object.fromEntries(Object.keys(externalFiles).map((path, index) => [path, activeExternalUrls[index]]));
   running = true;
   const gamepadIndexFix = system.id === 'ps1' ? installGamepadIndexCompatibility() : false;
 
@@ -470,6 +524,7 @@ async function startGame(file, system, title = file.name) {
     EJS_gameName: title,
     EJS_gameID: gameId,
     EJS_pathtodata: EJS_DATA,
+    ...(Object.keys(externalFileMap).length ? { EJS_externalFiles: externalFileMap } : {}),
     EJS_startOnLoaded: true,
     EJS_color: '#d6fa6a',
     EJS_fixedSaveInterval: 30000,
@@ -487,6 +542,7 @@ async function startGame(file, system, title = file.name) {
     },
     EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
     EJS_onGameStart: () => {
+      releaseExternalObjectUrls();
       status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`;
       requestAnimationFrame(resizeEmulatorViewport);
     },
@@ -500,6 +556,7 @@ async function startGame(file, system, title = file.name) {
     status.textContent = 'Não foi possível carregar o núcleo. Verifique a conexão e recarregue a página.';
     running = false;
     if (typeof gameUrl === 'string' && gameUrl.startsWith('blob:')) URL.revokeObjectURL(gameUrl);
+    releaseExternalObjectUrls();
   };
   document.head.append(script);
   window.setTimeout(() => {
@@ -507,6 +564,11 @@ async function startGame(file, system, title = file.name) {
       status.textContent = 'O núcleo ainda não respondeu. Verifique a internet, permita o carregamento da CDN e tente novamente; ROMs maiores podem levar mais tempo.';
     }
   }, 45000);
+}
+
+function releaseExternalObjectUrls() {
+  activeExternalUrls.forEach((url) => URL.revokeObjectURL(url));
+  activeExternalUrls = [];
 }
 
 async function stableGameId(file, systemId) {

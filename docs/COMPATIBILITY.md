@@ -21,7 +21,7 @@ O autosave SRAM do EmulatorJS escreve no IndexedDB do navegador. A barra do moto
 
 ## BIOS e saves de PS1
 
-O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor pode receber uma BIOS que o usuário já possua; o projeto não inclui nem baixa firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real. Em iPhone/iPad, mídias CUE/BIN de 300 MiB ou mais exibem aviso de risco de memória (limite heurístico, não um limite garantido); CHD pode reduzir o tamanho da entrada.
+O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor pode receber uma BIOS que o usuário já possua; o projeto não inclui nem baixa firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real. Em iPhone/iPad, CUE/M3U e faixas são fornecidos ao core como arquivos locais separados, sem ZIP intermediário, para reduzir cópias extras na memória. Mídias acima de 300 MiB exibem aviso de risco de memória (limite heurístico, não garantido); CHD pode reduzir o tamanho da entrada.
 
 ## Classificação futura
 
