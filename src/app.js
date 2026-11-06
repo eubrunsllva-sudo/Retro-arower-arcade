@@ -14,6 +14,7 @@ const fileInput = document.querySelector('#game-file');
 const notice = document.querySelector('#notice');
 const player = document.querySelector('#player-section');
 const gamepadStatus = document.querySelector('#gamepad-status');
+const fullscreenButton = document.querySelector('#toggle-fullscreen');
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
@@ -193,6 +194,40 @@ function formatBytes(bytes) {
 const reloadPage = () => window.location.reload();
 document.querySelector('#reload-page').addEventListener('click', reloadPage);
 document.querySelector('#reload-session').addEventListener('click', reloadPage);
+
+fullscreenButton.addEventListener('click', () => {
+  if (document.body.classList.contains('game-fullscreen')) {
+    void exitGameFullscreen();
+  } else {
+    void enterGameFullscreen();
+  }
+});
+
+async function enterGameFullscreen() {
+  document.body.classList.add('game-fullscreen');
+  fullscreenButton.textContent = 'SAIR DA TELA CHEIA';
+  fullscreenButton.setAttribute('aria-pressed', 'true');
+  if (player.requestFullscreen) {
+    try { await player.requestFullscreen(); } catch { /* CSS viewport mode remains available, including on iPhone. */ }
+  }
+}
+
+async function exitGameFullscreen() {
+  if (document.fullscreenElement && document.exitFullscreen) {
+    try { await document.exitFullscreen(); } catch { /* The visible exit button still clears the CSS mode. */ }
+  }
+  document.body.classList.remove('game-fullscreen');
+  fullscreenButton.textContent = 'TELA CHEIA';
+  fullscreenButton.setAttribute('aria-pressed', 'false');
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.body.classList.contains('game-fullscreen')) {
+    document.body.classList.remove('game-fullscreen');
+    fullscreenButton.textContent = 'TELA CHEIA';
+    fullscreenButton.setAttribute('aria-pressed', 'false');
+  }
+});
 
 const aboutDialog = document.querySelector('#about-dialog');
 document.querySelector('#about-button').addEventListener('click', () => aboutDialog.showModal());

@@ -99,3 +99,10 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Teste real no iPhone 13 Pro pendente. Depois do deploy, recarregue a página, toque **Escolher um jogo** e toque uma vez no arquivo `.gba`; o nome deve aparecer no resumo e o botão **Iniciar jogo** deve habilitar.
 - Se o app Arquivos precisar baixar o item do provedor remoto, aguarde a conclusão do download antes de selecioná-lo.
 - Se tocar no item no provedor “Files from my PC” fechar/ignorar a seleção e a página continuar sem ROM, faça uma cópia em **No Meu iPhone**. Existe relato de regressão do seletor WebKit com itens de provedores externos de arquivos no iOS 26.2; essa falha pode continuar mesmo sem o filtro `accept`.
+
+## 2026-11-06 — Modo expandido para celular
+
+- Adicionado botão próprio **Tela cheia / Sair da tela cheia** na sessão do emulador.
+- Em navegadores com Fullscreen API, o site tenta entrar em tela cheia nativa. Se essa API não existir/for recusada, ativa modo expandido com CSS, ocupando o viewport, tratando as áreas seguras do iPhone e deixando o botão de saída visível.
+- iOS Safari não garante Fullscreen API para elementos comuns (há histórico de suporte restrito a vídeo); o fallback expande a página, mas a barra do navegador pode permanecer visível. Orientação paisagem deve ser feita pelo usuário.
+- Validação em iPhone físico pendente; a sintaxe do JavaScript e deploy serão verificados após publicação.
