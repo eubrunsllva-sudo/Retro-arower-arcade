@@ -40,6 +40,9 @@ fileInput.addEventListener('change', async () => {
   document.querySelector('#selection-message').textContent = pendingGame
     ? 'Arquivo pronto. Pressione “Iniciar jogo” para carregar o emulador.'
     : 'Este formato ainda não pode ser iniciado nesta fase.';
+  document.querySelector('#start-hint').textContent = pendingGame
+    ? 'ROM selecionada. O botão Iniciar jogo está pronto.'
+    : 'Escolha uma ROM GBC ou GBA compatível para habilitar Iniciar jogo.';
   notice.hidden = false;
 
   if (!system?.active) {
@@ -53,6 +56,7 @@ fileInput.addEventListener('change', async () => {
     pendingGame = null;
     startButton.disabled = true;
     document.querySelector('#selection-message').textContent = 'Encerre a sessão atual antes de iniciar outro jogo.';
+    document.querySelector('#start-hint').textContent = 'Uma sessão já está aberta; recarregue a página antes de iniciar outro jogo.';
     notice.textContent = 'Já existe um jogo aberto. Encerre a sessão atual antes de iniciar outro.';
     return;
   }
@@ -66,12 +70,14 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   pendingGame = null;
   document.querySelector('#start-game').disabled = true;
   notice.hidden = true;
+  document.querySelector('#start-hint').textContent = 'Preparando a ROM e iniciando o núcleo…';
   try {
     await startGame(game.file, game.system);
   } catch (error) {
     running = false;
     const message = error instanceof Error ? error.message : String(error);
     document.querySelector('#player-status').textContent = `Não foi possível preparar este arquivo: ${message}`;
+    document.querySelector('#start-hint').textContent = 'Falha ao preparar a ROM. Escolha o arquivo novamente e tente outra vez.';
     notice.textContent = 'Falha ao ler a ROM. Confirme que o arquivo é uma ROM válida e tente novamente.';
     notice.hidden = false;
   }
@@ -165,10 +171,9 @@ function formatBytes(bytes) {
   return `${value.toFixed(unit ? 1 : 0)} ${units[unit]}`;
 }
 
-document.querySelector('#close-player').addEventListener('click', () => {
-  // A page reload lets the emulator release workers, WebGL and its object URL safely.
-  window.location.reload();
-});
+const reloadPage = () => window.location.reload();
+document.querySelector('#reload-page').addEventListener('click', reloadPage);
+document.querySelector('#reload-session').addEventListener('click', reloadPage);
 
 const aboutDialog = document.querySelector('#about-dialog');
 document.querySelector('#about-button').addEventListener('click', () => aboutDialog.showModal());

@@ -2,7 +2,7 @@
 
 Projeto de emulação retrô para navegador, com interface em português e seis sistemas no escopo inicial: Game Boy Color, Game Boy Advance, Nintendo 64, PlayStation, Dreamcast e PSP.
 
-> **Estado atual:** base concluída; GBC/GBA em integração experimental via EmulatorJS 4.2.3. Os outros quatro consoles ainda não iniciam. A experiência não foi certificada em aparelhos físicos.
+> **Estado atual:** base concluída; GBC/GBA em integração experimental via EmulatorJS 4.2.3. A tela inicial traz os botões Escolher um jogo, Iniciar jogo (habilitado após selecionar ROM compatível) e Recarregar página. Os outros quatro consoles ainda não iniciam; não há certificação em aparelho físico.
 
 ## Princípios
 

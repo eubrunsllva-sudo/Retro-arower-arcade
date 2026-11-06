@@ -21,8 +21,13 @@
           <div class="eyebrow"><span class="eyebrow-line"></span>ARCADE PESSOAL · EM DESENVOLVIMENTO</div>
           <h1>O seu próximo<br /><span>continue?</span></h1>
           <p>Uma casa para seus clássicos. Escolha um jogo do seu dispositivo e jogue direto pelo navegador.</p>
-          <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER UM JOGO <span class="button-arrow">↗</span></label>
+          <div class="hero-actions">
+            <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER UM JOGO <span class="button-arrow">↗</span></label>
+            <button class="primary-button start-button" id="start-game" type="button" disabled>▶ &nbsp; INICIAR JOGO</button>
+            <button class="secondary-button reload-button" id="reload-page" type="button">↻ &nbsp; RECARREGAR PÁGINA</button>
+          </div>
           <input id="game-file" type="file" hidden accept=".gb,.gbc,.gba,.n64,.z64,.v64,.iso,.bin,.cue,.pbp,.chd,.cso,.zip" />
+          <p class="microcopy start-hint" id="start-hint">Escolha uma ROM compatível; depois o botão Iniciar jogo será habilitado.</p>
           <p class="microcopy">O arquivo é aberto localmente. Nada é enviado nesta versão.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -40,15 +45,15 @@
       </section>
 
       <section class="selected-game" id="selected-game" hidden aria-live="polite">
-        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span><span id="selection-message">Escolha um jogo para começar.</span></div><span class="selected-tag" id="selected-system"></span><button class="secondary-button" id="start-game" type="button" disabled>INICIAR JOGO</button>
+        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span><span id="selection-message">Escolha um jogo para começar.</span></div><span class="selected-tag" id="selected-system"></span>
       </section>
 
       <section class="notice" id="notice" hidden role="status"></section>
 
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
-        <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="close-player" class="secondary-button" type="button">ENCERRAR</button></div></div>
+        <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
-        <p class="player-footnote">Teclado e controle Bluetooth podem ser configurados no menu de controles do emulador. Em telas sensíveis ao toque, ative o controle virtual pelo ícone de controle. Iniciar, pausar, reiniciar, tela cheia e save/load state ficam na barra do emulador. ROM fica local; o motor é carregado da CDN oficial.</p>
+        <p class="player-footnote">Teclado e controle Bluetooth podem ser configurados no menu de controles do emulador. Em telas sensíveis ao toque, ative o controle virtual pelo ícone de controle. Iniciar, pausar, reiniciar, tela cheia e save/load state ficam na barra do emulador. Recarregar a página encerra esta sessão e exige escolher a ROM novamente; o último autosave pode ter até 30 segundos. ROM fica local; o motor é carregado da CDN oficial.</p>
       </section>
 
       <section class="save-strip">
