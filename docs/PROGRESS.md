@@ -91,3 +91,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Validação observada em 2026-11-06: workflow `Publicar no GitHub Pages` concluído com sucesso; URL respondeu HTTP 200.
 - Verificação local: sintaxe de `src/app.js` aprovada pelo `node --check`.
 - O teste físico do iPega 9023S permanece pendente; usar o painel da página para confirmar a detecção real pelo navegador.
+
+## 2026-11-06 — Correção do seletor no iPhone
+
+- Causa provável: `<input type="file">` tinha `accept` com uma lista de extensões retro. O Safari do iOS tem suporte parcial/inconsistente ao filtro por extensões; o seletor pode mostrar ROMs desconhecidas em cinza sem permitir devolvê-las à página. O ícone de arquivo desconhecido no print é compatível com esse caso.
+- Correção: removido o filtro `accept`; extensão e compatibilidade continuam validadas no JavaScript após a seleção. Mantida a ativação por label nativo, que já abre o seletor mostrado na captura.
+- Teste real no iPhone 13 Pro pendente. Depois do deploy, recarregue a página, toque **Escolher um jogo** e toque uma vez no arquivo `.gba`; o nome deve aparecer no resumo e o botão **Iniciar jogo** deve habilitar.
+- Se o app Arquivos precisar baixar o item do provedor remoto, aguarde a conclusão do download antes de selecioná-lo.
+- Se tocar no item no provedor “Files from my PC” fechar/ignorar a seleção e a página continuar sem ROM, faça uma cópia em **No Meu iPhone**. Existe relato de regressão do seletor WebKit com itens de provedores externos de arquivos no iOS 26.2; essa falha pode continuar mesmo sem o filtro `accept`.
