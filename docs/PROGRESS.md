@@ -124,3 +124,4 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Sintaxe JavaScript verificada. Não foi incluída ROM ou BIOS de terceiros. Ainda não foi possível testar uma imagem PS1 legal em execução real; PS1 permanece experimental até o usuário validar boot, controles, áudio e memory card.
 - O comportamento do core e a leitura de BIOS Blob precisam validação ponta a ponta. Não assumir que selecionar BIOS equivale a uma BIOS reconhecida pelo core.
 - Formatos de disco multipartes, SBI e troca de discos continuam para etapa posterior.
+- Deploy do commit `a9c4f4a` concluiu com sucesso; GitHub Pages respondeu HTTP 200 e a página publicada contém o core `psx` e o seletor opcional de BIOS. A execução de jogo real continua sem teste.
