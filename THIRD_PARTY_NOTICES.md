@@ -1,11 +1,11 @@
 # Avisos de terceiros
 
-## Integração experimental — etapa 2
+## Integrações experimentais — EmulatorJS 4.2.3
 
 - **EmulatorJS 4.2.3**, licença GPL-3.0: loader e dados carregados em tempo de execução de `https://cdn.emulatorjs.org/4.2.3/data/`. Este repositório não contém código, WASM, core, ROM ou BIOS do EmulatorJS.
-- Cores selecionados: Gambatte para GB/GBC e mGBA para GBA. Antes de espelhar ou distribuir os artefatos, revisar e registrar licença e fonte correspondente de cada core/dependência.
+- Cores selecionados: Gambatte para GB/GBC, mGBA para GBA e PCSX-ReARMed para PS1 (`psx`). A documentação Libretro lista PCSX-ReARMed sob GPL-2.0. Os cores são carregados da CDN do EmulatorJS, não incluídos neste repositório. Antes de espelhar/distribuir artefatos, revisar a licença e a fonte correspondente de cada core/dependência.
 - A aplicação contém apenas a integração/configuração própria. Google Fonts continua carregado remotamente no CSS.
-- Não há jogos, BIOS ou firmware incluídos. Para GBC/GBA, a documentação do EmulatorJS indica BIOS opcional.
+- Não há jogos, BIOS ou firmware incluídos. BIOS real de PS1 deve ser fornecida pelo próprio usuário; sem ela, PCSX-ReARMed pode recorrer a HLE.
 
 ## Candidatos pesquisados (não incorporados)
 

@@ -4,11 +4,12 @@ As etapas podem ser reordenadas se os testes mostrarem incompatibilidade. Cada c
 
 1. **Base web (concluída):** interface responsiva, seletor local, documentação inicial e mapa de compatibilidade.
 2. **GBC/GBA (integração experimental):** loader EmulatorJS 4.2.3, ROM local e autosave SRAM no navegador. Falta validar ROM homebrew, controles, áudio, exportação/importação manual e navegadores/dispositivos.
-3. **Persistência e experiência móvel:** IndexedDB resiliente, recuperação de quota, mensagens de erro, continuidade após recarregar e matriz iOS/Android.
-4. **PS1 e N64:** integração isolada por adaptador; formatos de discos/cartuchos, necessidade de firmware e desempenho validados por jogo.
-5. **Dreamcast:** avaliar Flycast WebAssembly; validar firmware legalmente fornecido ou alternativa HLE suportada, formatos de disco e desempenho móvel.
-6. **PSP e nuvem opcional:** avaliar PPSSPP WebAssembly, requisitos de threads/SharedArrayBuffer e iOS; implementar Drive somente com OAuth, consentimento explícito e política de privacidade.
-7. **Preparação para GitHub público:** auditoria de licenças e avisos, política de segurança/privacidade, builds reproduzíveis, instruções de deploy e teste de regressão nos navegadores-alvo.
+3. **PS1 (integração experimental):** PCSX-ReARMed com imagens `.chd`, `.pbp` e `.iso`, BIOS própria opcional. Falta testar ROM legal em browsers/aparelhos e confirmar cartão de memória/autosave. Suporte a CUE/BIN multidisco requer seleção de múltiplos arquivos.
+4. **Persistência e experiência móvel:** IndexedDB resiliente, recuperação de quota, mensagens de erro, continuidade após recarregar e matriz iOS/Android.
+5. **Nintendo 64:** integrar núcleo compatível e validar formatos, controles, saves e desempenho por aparelho.
+6. **Dreamcast:** avaliar Flycast WebAssembly; validar firmware legalmente fornecido ou alternativa HLE suportada, formatos de disco e desempenho móvel.
+7. **PSP e nuvem opcional:** avaliar PPSSPP WebAssembly, requisitos de threads/SharedArrayBuffer e iOS; implementar Drive somente com OAuth, consentimento explícito e política de privacidade.
+8. **Preparação para GitHub público:** auditoria de licenças e avisos, política de segurança/privacidade, builds reproduzíveis, instruções de deploy e teste de regressão nos navegadores-alvo.
 
 ## Critério por console
 

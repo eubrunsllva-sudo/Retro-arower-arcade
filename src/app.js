@@ -2,7 +2,7 @@ const systems = [
   { id: 'gb', name: 'Game Boy Color', short: 'GBC', year: '1998', color: 'mint', extensions: ['.gb', '.gbc'], core: 'gb', active: true },
   { id: 'gba', name: 'Game Boy Advance', short: 'GBA', year: '2001', color: 'amber', extensions: ['.gba'], core: 'gba', active: true },
   { id: 'n64', name: 'Nintendo 64', short: 'N64', year: '1996', color: 'blue', extensions: ['.n64', '.z64', '.v64'] },
-  { id: 'ps1', name: 'PlayStation', short: 'PS1', year: '1994', color: 'violet', extensions: ['.iso', '.bin', '.cue', '.pbp', '.chd'] },
+  { id: 'ps1', name: 'PlayStation', short: 'PS1', year: '1994', color: 'violet', extensions: ['.chd', '.pbp', '.iso', '.cue', '.bin', '.m3u'], core: 'psx', active: true },
   { id: 'dc', name: 'Dreamcast', short: 'DC', year: '1998', color: 'orange', extensions: ['.iso', '.bin', '.cdi', '.gdi', '.chd'] },
   { id: 'psp', name: 'PlayStation Portable', short: 'PSP', year: '2004', color: 'pink', extensions: ['.iso', '.cso', '.pbp', '.chd'] },
 ];
@@ -15,9 +15,13 @@ const notice = document.querySelector('#notice');
 const player = document.querySelector('#player-section');
 const gamepadStatus = document.querySelector('#gamepad-status');
 const fullscreenButton = document.querySelector('#toggle-fullscreen');
+const biosInput = document.querySelector('#ps1-bios-file');
+const biosStatus = document.querySelector('#ps1-bios-status');
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
+let ps1BiosUrl = '';
+const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
 
 grid.innerHTML = systems.map((system, index) => `
   <article class="console-card ${system.color} ${system.active ? 'console-active' : ''}">
@@ -26,6 +30,25 @@ grid.innerHTML = systems.map((system, index) => `
     <div class="card-bottom"><div><h3>${system.name}</h3><span class="card-status">${system.active ? 'EXPERIMENTAL · TESTE LOCAL' : 'PLANEJADO'}</span></div><span class="card-arrow">${system.active ? '●' : '↗'}</span></div>
   </article>`).join('');
 
+biosInput.addEventListener('change', async () => {
+  const file = biosInput.files?.[0];
+  biosInput.value = '';
+  if (!file) return;
+  if (!file.size) {
+    biosStatus.textContent = 'Esse arquivo está vazio; escolha uma BIOS válida.';
+    return;
+  }
+  try {
+    const sample = await file.slice(0, Math.min(file.size, 4096)).arrayBuffer();
+    if (!sample.byteLength) throw new Error('não foi possível ler o arquivo');
+    if (ps1BiosUrl) URL.revokeObjectURL(ps1BiosUrl);
+    ps1BiosUrl = URL.createObjectURL(file);
+    biosStatus.textContent = `BIOS selecionada: ${file.name} · ${formatBytes(file.size)} (local)`;
+  } catch (error) {
+    biosStatus.textContent = error instanceof Error ? `Falha ao ler a BIOS: ${error.message}` : 'Falha ao ler a BIOS selecionada.';
+  }
+});
+
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files?.[0];
   if (!file) return;
@@ -33,7 +56,8 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = '';
   const extension = `.${file.name.split('.').pop().toLowerCase()}`;
   const matches = systems.filter((system) => system.extensions.includes(extension));
-  const system = matches.length === 1 ? matches[0] : null;
+  const activeMatches = matches.filter((item) => item.active);
+  const system = activeMatches.length === 1 ? activeMatches[0] : matches.length === 1 ? matches[0] : null;
 
   document.querySelector('#selected-name').textContent = file.name;
   document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · arquivo permanece neste dispositivo`;
@@ -46,8 +70,17 @@ fileInput.addEventListener('change', async () => {
     : 'Este formato ainda não pode ser iniciado nesta fase.';
   document.querySelector('#start-hint').textContent = system?.active
     ? `Arquivo selecionado. Lendo uma amostra local de ${file.name}…`
-    : 'Escolha uma ROM GBC ou GBA compatível para habilitar Iniciar jogo.';
+    : 'Escolha uma ROM GBC/GBA ou imagem única de PS1 (.chd, .pbp, .iso) para habilitar Iniciar jogo.';
   notice.hidden = false;
+
+  document.querySelector('#ps1-firmware').hidden = system?.id !== 'ps1';
+
+  if (system?.id === 'ps1' && ['.cue', '.bin', '.m3u'].includes(extension)) {
+    document.querySelector('#selection-message').textContent = 'Esse formato precisa de outros arquivos do mesmo disco, que ainda não podem ser enviados juntos nesta versão.';
+    document.querySelector('#start-hint').textContent = 'Para PS1, use um arquivo único .chd, .pbp ou .iso. CUE/BIN e M3U multidisco ficam para a próxima etapa.';
+    notice.textContent = 'Seleção recebida, mas CUE/BIN e M3U dependem de arquivos companheiros. Converta o disco para CHD ou escolha um PBP/ISO próprio.';
+    return;
+  }
 
   if (!system?.active) {
     notice.textContent = system
@@ -113,12 +146,15 @@ async function startGame(file, system) {
   mount.replaceChildren();
   status.textContent = `Lendo ROM local (${formatBytes(file.size)})…`;
   const gameId = await stableGameId(file, system.id);
-  const gameUrl = URL.createObjectURL(file);
+  // EmulatorJS's own demo accepts File objects directly. Keep the original filename
+  // for disc-based cores that infer the image format from its extension.
+  const gameUrl = system.id === 'ps1' ? file : URL.createObjectURL(file);
   running = true;
 
   Object.assign(window, {
     EJS_player: '#game-screen',
     EJS_core: system.core,
+    EJS_biosUrl: system.id === 'ps1' ? ps1BiosUrl : '',
     EJS_gameUrl: gameUrl,
     EJS_gameName: file.name,
     EJS_gameID: gameId,
@@ -137,8 +173,8 @@ async function startGame(file, system) {
       saveSavFiles: true,
       loadSavFiles: true,
     },
-    EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${system.core === 'gba' ? 'mGBA' : 'Gambatte'}).`; },
-    EJS_onGameStart: () => { status.textContent = `${system.core === 'gba' ? 'mGBA' : 'Gambatte'} em execução · autosave local habilitado`; },
+    EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
+    EJS_onGameStart: () => { status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`; },
   });
 
   const script = document.createElement('script');
@@ -148,7 +184,7 @@ async function startGame(file, system) {
   script.onerror = () => {
     status.textContent = 'Não foi possível carregar o núcleo. Verifique a conexão e recarregue a página.';
     running = false;
-    URL.revokeObjectURL(gameUrl);
+    if (typeof gameUrl === 'string' && gameUrl.startsWith('blob:')) URL.revokeObjectURL(gameUrl);
   };
   document.head.append(script);
   window.setTimeout(() => {

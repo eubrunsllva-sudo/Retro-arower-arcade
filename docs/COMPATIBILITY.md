@@ -1,23 +1,27 @@
-# Compatibilidade — estado inicial
+# Matriz de compatibilidade
 
-Esta tabela separa alvo de produto e suporte já demonstrado. GBC/GBA têm integração experimental via EmulatorJS; execução em aparelhos reais ainda não está certificada.
+Esta tabela separa alvo de produto e suporte já demonstrado. GBC/GBA/PS1 têm integração experimental via EmulatorJS; execução em aparelhos reais ainda não está certificada.
 
 | Console | Alvo | Estado nesta etapa | Observações a validar |
 |---|---|---|---|
 | Game Boy Color | Chrome, Edge, Firefox, Android, iOS | Experimental, não testado em aparelho | ROM `.gb`/`.gbc`; Gambatte via `gb`; SRAM local; controles/áudio/restart ainda precisam teste |
 | Game Boy Advance | Chrome, Edge, Firefox, Android, iOS | Experimental, não testado em aparelho | ROM `.gba`; mGBA via `gba`; SRAM local; desempenho/controles/áudio ainda precisam teste |
 | Nintendo 64 | Chrome, Edge, Firefox, Android, iOS | Planejado | Desempenho varia por jogo e aparelho; vídeo/WebGL |
-| PlayStation | Chrome, Edge, Firefox, Android, iOS | Planejado | Formatos multidisco, firmware e memória |
+| PlayStation | Chrome, Edge, Firefox, Android, iOS | Experimental, sem ROM real validada | core `psx`/PCSX-ReARMed; `.chd`, `.pbp`, `.iso` em arquivo único; BIOS própria opcional; `.cue/.bin` e `.m3u` ainda não suportados neste seletor |
 | Dreamcast | Chrome, Edge, Firefox, Android, iOS | Planejado | Candidato separado Flycast WASM; aparelho pode ser limitante |
 | PSP | Chrome, Edge, Firefox, Android, iOS | Planejado | Threads/SharedArrayBuffer e requisitos de hospedagem podem limitar navegadores |
 
 ## Acesso a arquivos
 
-O seletor HTML permite escolher arquivos, mas não dá ao site acesso irrestrito ao sistema de arquivos. iOS pode ter experiência de seleção e persistência diferente do Android/desktop. Para GBC/GBA, o arquivo é lido localmente por uma URL temporária e não é enviado. O loader/core é obtido da CDN oficial do EmulatorJS 4.2.3; portanto, a primeira execução exige conexão.
+O seletor HTML permite escolher arquivos, mas não dá ao site acesso irrestrito ao sistema de arquivos. iOS pode ter experiência de seleção e persistência diferente do Android/desktop. Arquivos de jogo são lidos localmente e não são enviados. O loader/core é obtido da CDN oficial do EmulatorJS 4.2.3; portanto, a primeira execução exige conexão.
 
-Nesta fase, escolha ROMs sem compactação: `.gb`/`.gbc` para GB/GBC e `.gba` para GBA. Arquivo `.zip` não é classificado pelo seletor atual; extraia-o primeiro e selecione o arquivo `.gba` interno. O cartão removível não muda o tipo do arquivo que o navegador entrega depois da escolha. A documentação oficial do EmulatorJS confirma os identificadores `gb`/Gambatte e `gba`/mGBA; não documenta uma tabela de extensões completa.
+Escolha ROMs sem compactação para GBC/GBA: `.gb`/`.gbc` e `.gba`. Para PS1, nesta etapa use uma imagem de disco única `.chd`, `.pbp` ou `.iso`. O arquivo `.cue` descreve pistas que dependem de arquivos companheiros (geralmente BIN); como o seletor atual recebe um arquivo por vez, esse conjunto ainda não inicia. Extraia arquivos de `.zip` antes de selecionar. O cartão removível não muda o tipo do arquivo que o navegador entrega depois da escolha. A documentação oficial do EmulatorJS identifica `psx` como PCSX-ReARMed; a documentação Libretro lista suas extensões e avisa que BIOS HLE pode reduzir compatibilidade.
 
 O autosave SRAM do EmulatorJS escreve no IndexedDB do navegador. A barra do motor também expõe save/load state e exportação/importação SRAM. Esses comandos ainda não foram verificados em teste de ponta a ponta. Limpeza de dados, quota esgotada ou políticas de armazenamento privado podem remover os saves.
+
+## BIOS e saves de PS1
+
+O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor permite indicar uma BIOS que o usuário já possua; o projeto não inclui nem baixa arquivos de firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real.
 
 ## Classificação futura
 

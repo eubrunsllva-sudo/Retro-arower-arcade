@@ -83,7 +83,7 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - O código não consegue trocar o modo Bluetooth do iPega. O navegador só recebe controle como gamepad se o firmware estiver conectado num perfil compatível; o diagnóstico é necessário para descobrir se esse é o caso.
 - Ainda não houve teste físico com o modelo iPega 9023S. O suporte de gamepads em iOS varia por sistema, navegador e perfil do controle, então não é possível prometer ausência de restrições do iOS.
 - GitHub Pages foi habilitado em modo de publicação por workflow; primeiro deploy do Actions concluiu com sucesso e a URL retornou HTTP 200.
-- GBC/GBA seguem como únicos núcleos integrados; N64, Dreamcast, PS1 e PSP continuam planejados.
+- GBC/GBA/PS1 têm integração experimental; N64, Dreamcast e PSP continuam planejados.
 
 ### Resultado do deploy
 
@@ -106,3 +106,21 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Em navegadores com Fullscreen API, o site tenta entrar em tela cheia nativa. Se essa API não existir/for recusada, ativa modo expandido com CSS, ocupando o viewport, tratando as áreas seguras do iPhone e deixando o botão de saída visível.
 - iOS Safari não garante Fullscreen API para elementos comuns (há histórico de suporte restrito a vídeo); o fallback expande a página, mas a barra do navegador pode permanecer visível. Orientação paisagem deve ser feita pelo usuário.
 - Validação em iPhone físico pendente; a sintaxe do JavaScript e deploy serão verificados após publicação.
+
+## 2026-11-06 — Etapa PS1: core integrado (experimental)
+
+### Implementado
+
+- Ativado PS1 usando `EJS_core: 'psx'`, core padrão PCSX-ReARMed do EmulatorJS 4.2.3.
+- Início direto para imagens individuais `.chd`, `.pbp` e `.iso`. Quando a extensão também pertence a um sistema ainda planejado, a seleção prioriza o único console ativo que reconhece aquele arquivo; por enquanto isso seleciona PS1.
+- EJS recebe o objeto `File` original do PS1 para conservar o nome/extensão da imagem. GBC/GBA continuam usando URL Blob.
+- BIOS própria opcional: o usuário escolhe o arquivo localmente e o app passa uma URL Blob ao motor. Nenhum firmware é distribuído; sem BIOS, o PCSX-ReARMed usa HLE, sujeito a limitações.
+- CUE/BIN e M3U multidisco são identificados com uma explicação: esta interface ainda escolhe somente um arquivo e não carrega os companheiros requeridos.
+- Atualizados cartões de console, notas de licença, README, compatibilidade e roadmap.
+
+### Validação e limites
+
+- Confirmei nas fontes do EmulatorJS o identificador `psx` e o core PCSX-ReARMed; documentação Libretro lista `.chd`, `.pbp` e `.iso` e informa o fallback HLE.
+- Sintaxe JavaScript verificada. Não foi incluída ROM ou BIOS de terceiros. Ainda não foi possível testar uma imagem PS1 legal em execução real; PS1 permanece experimental até o usuário validar boot, controles, áudio e memory card.
+- O comportamento do core e a leitura de BIOS Blob precisam validação ponta a ponta. Não assumir que selecionar BIOS equivale a uma BIOS reconhecida pelo core.
+- Formatos de disco multipartes, SBI e troca de discos continuam para etapa posterior.
