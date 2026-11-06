@@ -40,6 +40,10 @@
             <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">JOGO SELECIONADO</span><strong id="selected-name">Nenhum jogo selecionado</strong><span id="selected-meta">Selecione um arquivo .gb, .gbc ou .gba sem compactação.</span><span id="selection-message">O nome aparecerá aqui após confirmar o arquivo na janela do sistema.</span></div><span class="selected-tag" id="selected-system">—</span>
           </section>
           <p class="microcopy">O arquivo é aberto localmente. Nada é enviado nesta versão.</p>
+          <section class="gamepad-check" aria-labelledby="gamepad-title">
+            <div><span class="eyebrow">CONTROLE</span><strong id="gamepad-title">Diagnóstico do gamepad</strong><span id="gamepad-status" role="status" aria-live="polite">Aguardando controle Bluetooth/USB…</span></div>
+            <button class="secondary-button" id="gamepad-refresh" type="button">VERIFICAR CONTROLE</button>
+          </section>
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
@@ -60,7 +64,7 @@
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
         <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
-        <p class="player-footnote">Teclado e controle Bluetooth podem ser configurados no menu de controles do emulador. Em telas sensíveis ao toque, ative o controle virtual pelo ícone de controle. Iniciar, pausar, reiniciar, tela cheia e save/load state ficam na barra do emulador. Recarregar a página encerra esta sessão e exige escolher a ROM novamente; o último autosave pode ter até 30 segundos. ROM fica local; o motor é carregado da CDN oficial.</p>
+        <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. No EmulatorJS, abra Configurações → Controles para mapear os botões. Se o iPega não aparecer, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, a conexão Bluetooth e a Gamepad API dependem do navegador, sistema e modo do controle. O controle virtual pode ser ativado pela barra do emulador. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
       </section>
 
       <section class="save-strip">

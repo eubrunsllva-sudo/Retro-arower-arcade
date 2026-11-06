@@ -68,3 +68,19 @@
 ### Próximo passo
 
 Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, save/load SRAM/state e retomada do SRAM nos navegadores-alvo antes de declarar a fase completa.
+
+## 2026-11-06 — Etapa 3: diagnóstico de gamepad e hospedagem
+
+### Alterações
+
+- Adicionado painel na interface que consulta `navigator.getGamepads()`, mostra IDs, quantidade de botões/eixos e botões pressionados; acompanha conexão e desconexão.
+- Acrescentadas instruções para modo Gamepad/HID e mapeamento no EmulatorJS. O diagnóstico ajuda a separar falha de pareamento/perfil do controle de falha dentro do emulador.
+- Adicionado workflow do GitHub Pages para publicar a aplicação por HTTPS a cada atualização da branch `main`.
+- A ROM permanece local. A hospedagem entrega a página e os recursos do motor; a CPU/GPU do próprio dispositivo executa a emulação. Nenhuma ROM é enviada ao GitHub Pages.
+
+### Limites e validação pendente
+
+- O código não consegue trocar o modo Bluetooth do iPega. O navegador só recebe controle como gamepad se o firmware estiver conectado num perfil compatível; o diagnóstico é necessário para descobrir se esse é o caso.
+- Ainda não houve teste físico com o modelo iPega 9023S. O suporte de gamepads em iOS varia por sistema, navegador e perfil do controle, então não é possível prometer ausência de restrições do iOS.
+- Publicação depende de GitHub Pages habilitado para a conta/repositório. Após o primeiro push do workflow, verificar o resultado do GitHub Actions e abrir o endereço HTTPS.
+- GBC/GBA seguem como únicos núcleos integrados; N64, Dreamcast, PS1 e PSP continuam planejados.

@@ -26,3 +26,19 @@ O autosave SRAM do EmulatorJS escreve no IndexedDB do navegador. A barra do moto
 - **Não disponível:** núcleo ou recurso não funciona nesse ambiente.
 
 Não publicar alegações como “funciona em qualquer iPhone” sem testar as versões do iOS/Safari e o modo de acesso usado.
+
+## Gamepad e iOS
+
+A interface mostra os controles que o navegador reporta via Gamepad API. Ausência nessa lista indica que o navegador não reportou um dispositivo HID gamepad à página; remapeamento dentro do EmulatorJS não corrige modo Bluetooth/pareamento. Conecte em perfil Gamepad/HID e reavalie. A compatibilidade de controle Bluetooth em iPhone/iPad depende do modelo do controle, versão do iOS e navegador. GitHub Pages fornece HTTPS, mas não elimina limitações de APIs dos navegadores móveis.
+
+## Hospedagem
+
+GitHub Pages hospeda os arquivos estáticos. ROMs e saves não são enviados pelo fluxo de deploy. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem. Seleção de ROM é iniciada pelo usuário em cada aparelho e limitada aos arquivos escolhidos no seletor nativo.
+
+## Gamepad e iOS
+
+A interface mostra os controles que o navegador reporta via Gamepad API. Ausência nessa lista indica que o navegador não reportou um dispositivo HID gamepad à página; remapeamento dentro do EmulatorJS não corrige modo Bluetooth/pareamento. Conecte em perfil Gamepad/HID e reavalie. A compatibilidade de controle Bluetooth em iPhone/iPad depende do modelo do controle, versão do iOS e navegador. GitHub Pages fornece HTTPS, mas não elimina limitações de APIs dos navegadores móveis.
+
+## Hospedagem
+
+GitHub Pages hospeda os arquivos estáticos. ROMs e saves não são enviados pelo fluxo de deploy. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem. Seleção de ROM é iniciada pelo usuário em cada aparelho e limitada aos arquivos escolhidos no seletor nativo.

@@ -35,3 +35,15 @@ Abra `http://localhost:8000`. Em produção, publique por HTTPS (por exemplo, Gi
 ## Próxima etapa
 
 O próximo passo é testar com homebrew legal, validar retomada do SRAM, controles e áudio, e implementar exportação/importação manual. Consulte [progresso e limitações](docs/PROGRESS.md).
+
+## Acessar pela nuvem
+
+Quando o GitHub Pages estiver habilitado e o fluxo **Publicar no GitHub Pages** terminar, acesse:
+
+`https://eubrunsllva-sudo.github.io/Retro-arower-arcade/`
+
+O workflow em `.github/workflows/pages.yml` publica automaticamente cada atualização da branch `main`. O site é servido por HTTPS. No celular, abra a URL e selecione uma ROM armazenada naquele aparelho. O navegador não permite que o site leia pastas inteiras livremente: é necessário escolher os arquivos; no iOS, use Safari ou navegador compatível e confirme a seleção no seletor do sistema. O jogo não é transmitido da nuvem: a emulação acontece localmente no navegador e a ROM não é enviada.
+
+### Controles
+
+A página inclui um diagnóstico pela Gamepad API. Conecte o controle antes ou depois de abrir o site e toque em **Verificar controle**. Se o iPega for listado, abra o menu de controles do EmulatorJS para mapear/confirmar os botões. Se não aparecer, o controle provavelmente está pareado em modo de teclado ou num modo incompatível com Gamepad API; remova o pareamento e refaça em modo Gamepad/HID, então recarregue a página. No iOS, o suporte a gamepads depende da versão do sistema, navegador e perfil Bluetooth do controle; o site não pode remover essas limitações. O controle virtual na tela é alternativa para toque.

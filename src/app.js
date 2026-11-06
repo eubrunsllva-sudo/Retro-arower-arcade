@@ -13,6 +13,7 @@ const grid = document.querySelector('#console-grid');
 const fileInput = document.querySelector('#game-file');
 const notice = document.querySelector('#notice');
 const player = document.querySelector('#player-section');
+const gamepadStatus = document.querySelector('#gamepad-status');
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
@@ -196,6 +197,29 @@ document.querySelector('#reload-session').addEventListener('click', reloadPage);
 const aboutDialog = document.querySelector('#about-dialog');
 document.querySelector('#about-button').addEventListener('click', () => aboutDialog.showModal());
 document.querySelector('#close-dialog').addEventListener('click', () => aboutDialog.close());
+
+function inspectGamepads() {
+  if (!navigator.getGamepads) {
+    gamepadStatus.textContent = 'Este navegador não oferece Gamepad API nesta página.';
+    return;
+  }
+  const connected = [...navigator.getGamepads()].filter((pad) => pad?.connected);
+  if (!connected.length) {
+    gamepadStatus.textContent = 'Nenhum gamepad detectado. Conecte/pareie o controle e tente novamente.';
+    return;
+  }
+  gamepadStatus.textContent = connected.map((pad, index) => {
+    const pressed = [...pad.buttons].filter((button) => button.pressed).length;
+    return `${pad.id || `Gamepad ${index + 1}`} · ${pad.buttons.length} botões · ${pad.axes.length} eixos · ${pressed} pressionados`;
+  }).join(' | ');
+}
+
+document.querySelector('#gamepad-refresh').addEventListener('click', inspectGamepads);
+window.addEventListener('gamepadconnected', inspectGamepads);
+window.addEventListener('gamepaddisconnected', inspectGamepads);
+window.setInterval(() => {
+  if (!document.hidden) inspectGamepads();
+}, 1000);
 
 window.retroBrowserAppReady = true;
 document.querySelector('#start-hint').textContent = location.protocol === 'file:'
