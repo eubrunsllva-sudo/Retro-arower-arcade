@@ -23,6 +23,36 @@
 - Não há matriz de teste em dispositivos reais; iOS e consoles mais exigentes continuam sem garantia de compatibilidade.
 - Fonte tipográfica remota é carregada pelo Google Fonts no protótipo. Antes de deploy com foco em privacidade/offline, remover ou auto-hospedar essas fontes.
 
-## Próximo passo
+## 2026-11-06 — Etapa 2: primeiro núcleo (GBC/GBA)
 
-Validar e integrar GBC/GBA com um core WebAssembly e um jogo homebrew de teste. Definir o formato de save que o core expõe antes de implementar autosave, para não construir sincronização em cima de uma API incompatível.
+### Feito
+
+- Integrado o loader oficial EmulatorJS 4.2.3 por CDN fixada. O repositório não copia nem redistribui WASM/core.
+- GBC/GB usa Gambatte (`gb`); GBA usa mGBA (`gba`). A documentação oficial informa BIOS opcional para ambos.
+- ROM selecionada é lida por URL Blob local; não é enviada ao site. Apenas um jogo por sessão para evitar duas instâncias disputando WebGL/áudio.
+- Ativado `EJS_fixedSaveInterval=30000`; EmulatorJS usa sistema de arquivos IndexedDB (IDBFS) para persistir SRAM local por jogo.
+- Botão de encerrar recarrega a página para liberar worker, WebGL e URL temporária de forma previsível.
+- Interface e avisos agora distinguem sistemas experimentais e sistemas ainda planejados.
+- A partida agora exige ação clara: selecionar uma ROM mostra o resumo e habilita **Iniciar jogo**. Encerrar continua separado e não confunde a seleção do arquivo com o início.
+- Barra do EmulatorJS habilitada com pausa/retomar, reinício, configurações de controle, tela cheia, save/load state e exportação/importação de SRAM suportadas pelo motor.
+- Identificador de save agora considera todos os bytes da ROM, reduzindo colisões entre jogos com mesmo nome/tamanho.
+
+### Validação desta etapa
+
+- Revisão estática do fluxo, configuração conforme as páginas oficiais do EmulatorJS e sintaxe JavaScript serão verificadas nesta etapa.
+- Não há ROM homebrew incluída e ainda não foi possível certificar execução real em cada navegador/aparelho. Por isso GBC/GBA permanecem **experimentais**, não “100% testados”.
+- Falha inicial: a etapa anterior apenas identificava arquivos. Corrigido ligando a seleção ao loader e impedindo que consoles sem integração sejam apresentados como iniciáveis.
+- Falha relatada no teste: não havia botão explícito de início e a tela não explicava as opções de controle. Corrigido com fluxo de seleção → iniciar e explicação dos controles na sessão.
+- A pasta comum do navegador não pode ser escolhida como catálogo inteiro pelo seletor HTML usado aqui; o usuário escolhe um arquivo ROM de cada vez. Não há acesso recursivo ao aparelho.
+
+### Limitações conhecidas
+
+- Precisa de internet para obter loader/core da CDN. A ROM permanece local, mas o código do motor é servido por terceiro.
+- A barra do motor expõe save/load state e save/load SRAM; esses botões ainda precisam de teste de ponta a ponta. Drive continua fora desta etapa. Autosave depende de espaço no IndexedDB; limpar dados do navegador pode apagar progresso.
+- Controles do upstream: teclado padrão configurável e gamepad Bluetooth via menu de controles; gamepad virtual pode ser ativado em tela sensível ao toque. O suporte é relatado pela documentação do EmulatorJS, mas ainda não foi verificado neste projeto em hardware real.
+- Sem controles externos/táteis personalizados, seleção de BIOS, controle de quota, nem testes em dispositivos físicos. A BIOS é opcional para GBC/GBA conforme a documentação consultada.
+- GBC e GBA ficam experimentais até teste com homebrew legal em Chrome, Edge, Firefox, Android e iOS/Safari.
+
+### Próximo passo
+
+Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, save/load SRAM/state e retomada do SRAM nos navegadores-alvo antes de declarar a fase completa.

@@ -35,22 +35,28 @@
       </section>
 
       <section class="library-section">
-        <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Seis mundos. <span>Uma tela.</span></h2></div><span class="section-note">A compatibilidade será validada console a console.</span></div>
+        <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Seis mundos. <span>Uma tela.</span></h2></div><span class="section-note">GBC e GBA: núcleo integrado em fase experimental.</span></div>
         <div class="console-grid" id="console-grid" aria-label="Consoles planejados"></div>
       </section>
 
       <section class="selected-game" id="selected-game" hidden aria-live="polite">
-        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span></div><span class="selected-tag" id="selected-system"></span>
+        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span><span id="selection-message">Escolha um jogo para começar.</span></div><span class="selected-tag" id="selected-system"></span><button class="secondary-button" id="start-game" type="button" disabled>INICIAR JOGO</button>
       </section>
 
       <section class="notice" id="notice" hidden role="status"></section>
 
+      <section class="player-section" id="player-section" hidden aria-label="Emulador">
+        <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="close-player" class="secondary-button" type="button">ENCERRAR</button></div></div>
+        <div id="game-screen" class="game-screen"></div>
+        <p class="player-footnote">Teclado e controle Bluetooth podem ser configurados no menu de controles do emulador. Em telas sensíveis ao toque, ative o controle virtual pelo ícone de controle. Iniciar, pausar, reiniciar, tela cheia e save/load state ficam na barra do emulador. ROM fica local; o motor é carregado da CDN oficial.</p>
+      </section>
+
       <section class="save-strip">
-        <div class="save-icon">↻</div><div><strong>Seu progresso merece um checkpoint.</strong><p>Salvamento local automático e exportação manual estão no plano. Nuvem será opcional e configurável.</p></div><span class="coming-soon">EM PLANEJAMENTO</span>
+        <div class="save-icon">↻</div><div><strong>Seu progresso merece um checkpoint.</strong><p>GBC/GBA: salvamento automático local do núcleo. Exportação/importação manual e nuvem opcional seguem em validação.</p></div><span class="coming-soon">FASE EXPERIMENTAL</span>
       </section>
     </main>
 
     <footer><span>RETRO / BROWSER ARCADE <span class="footer-muted">· PROJETO ABERTO</span></span><a href="./docs/PROGRESS.md">ACOMPANHE O PROGRESSO ↗</a></footer>
-    <dialog id="about-dialog"><button class="dialog-close" id="close-dialog" aria-label="Fechar">×</button><div class="eyebrow">SOBRE O PROJETO</div><h2>Feito para jogar.<br /><span>Com transparência.</span></h2><p>Esta primeira etapa prepara a interface e a seleção de jogos. Os motores de emulação serão adicionados e testados em etapas. A lista de consoles não significa que todos já estejam funcionando.</p><p>O navegador só acessa arquivos que você escolher. Esta versão não envia ROMs, BIOS ou dados para servidores.</p><a href="./docs/DECISIONS.md">Ler decisões técnicas ↗</a></dialog>
+    <dialog id="about-dialog"><button class="dialog-close" id="close-dialog" aria-label="Fechar">×</button><div class="eyebrow">SOBRE O PROJETO</div><h2>Feito para jogar.<br /><span>Com transparência.</span></h2><p>GBC e GBA têm um núcleo experimental integrado. N64, Dreamcast, PS1 e PSP ainda estão planejados; a lista não garante que já funcionem.</p><p>O navegador só acessa arquivos que você escolher. Esta versão não envia ROMs, BIOS ou dados de jogo. O motor e seus dados são obtidos da CDN oficial, então jogar requer internet.</p><a href="./docs/DECISIONS.md">Ler decisões técnicas ↗</a></dialog>
   </body>
 </html>

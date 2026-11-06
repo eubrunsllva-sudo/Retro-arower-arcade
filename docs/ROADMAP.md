@@ -2,8 +2,8 @@
 
 As etapas podem ser reordenadas se os testes mostrarem incompatibilidade. Cada console só será marcado como funcional depois de uma verificação em navegador e aparelho físico.
 
-1. **Base web (concluída nesta entrega):** interface responsiva, seletor local, documentação inicial e mapa de compatibilidade.
-2. **GBC/GBA:** escolher/licenciar núcleos WebAssembly, carregar ROM local, controles táteis/teclado/gamepad, áudio, salvamento automático SRAM e exportação manual.
+1. **Base web (concluída):** interface responsiva, seletor local, documentação inicial e mapa de compatibilidade.
+2. **GBC/GBA (integração experimental):** loader EmulatorJS 4.2.3, ROM local e autosave SRAM no navegador. Falta validar ROM homebrew, controles, áudio, exportação/importação manual e navegadores/dispositivos.
 3. **Persistência e experiência móvel:** IndexedDB resiliente, recuperação de quota, mensagens de erro, continuidade após recarregar e matriz iOS/Android.
 4. **PS1 e N64:** integração isolada por adaptador; formatos de discos/cartuchos, necessidade de firmware e desempenho validados por jogo.
 5. **Dreamcast:** avaliar Flycast WebAssembly; validar firmware legalmente fornecido ou alternativa HLE suportada, formatos de disco e desempenho móvel.

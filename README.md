@@ -2,15 +2,15 @@
 
 Projeto de emulação retrô para navegador, com interface em português e seis sistemas no escopo inicial: Game Boy Color, Game Boy Advance, Nintendo 64, PlayStation, Dreamcast e PSP.
 
-> **Estado atual:** etapa 1 de 6. A interface e a seleção de arquivo estão implementadas. Nenhum núcleo de emulação foi integrado ainda; selecionar uma ROM não inicia um jogo nesta versão.
+> **Estado atual:** base concluída; GBC/GBA em integração experimental via EmulatorJS 4.2.3. Os outros quatro consoles ainda não iniciam. A experiência não foi certificada em aparelhos físicos.
 
 ## Princípios
 
 - O jogo é escolhido no dispositivo do usuário; não há catálogo de ROMs nem envio de arquivos nesta versão.
-- Os núcleos serão módulos substituíveis e avaliados por compatibilidade, licença, desempenho móvel e suporte de navegador.
-- Salvamento automático local será a opção padrão. Exportar/importar saves manualmente será possível. Sincronização com Google Drive será opcional e virá depois, com autorização OAuth do próprio usuário.
+- GBC/GBA carregam loader/core da CDN oficial EmulatorJS; a primeira execução exige internet. A ROM escolhida permanece no aparelho e não é enviada.
+- O autosave local SRAM está ligado em intervalo de 30 segundos. A barra do motor oferece controles de pausa/reinício, mapeamento de controles, tela cheia, save/load state e SRAM. Os recursos de save ainda precisam de validação ponta a ponta. Google Drive não está implementado.
 - Não distribuímos jogos, BIOS proprietárias ou links para cópias não autorizadas. O app poderá aceitar arquivos de firmware fornecidos pelo usuário quando o núcleo exigir.
-- Chrome, Edge, Firefox, Android e iOS serão alvos de teste; isso não significa compatibilidade garantida para todo aparelho ou jogo.
+- Chrome, Edge, Firefox, Android e iOS serão alvos de teste; esta etapa ainda não garante compatibilidade em qualquer aparelho. No iOS, o Safari é o motor de navegador subjacente mesmo para outros navegadores.
 
 ## Rodar localmente
 
@@ -33,4 +33,4 @@ Abra `http://localhost:8000`. Em produção, publique por HTTPS (por exemplo, Gi
 
 ## Próxima etapa
 
-Integrar um núcleo de GBC/GBA em uma branch curta, testar jogos homebrew legalmente distribuídos, salvar/retomar SRAM no armazenamento local e medir inicialização, áudio, controles e consumo de memória. Só depois de validar esse caminho avançamos aos outros sistemas.
+O próximo passo é testar com homebrew legal, validar retomada do SRAM, controles e áudio, e implementar exportação/importação manual. Consulte [progresso e limitações](docs/PROGRESS.md).
