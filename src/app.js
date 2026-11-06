@@ -66,7 +66,15 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   pendingGame = null;
   document.querySelector('#start-game').disabled = true;
   notice.hidden = true;
-  await startGame(game.file, game.system);
+  try {
+    await startGame(game.file, game.system);
+  } catch (error) {
+    running = false;
+    const message = error instanceof Error ? error.message : String(error);
+    document.querySelector('#player-status').textContent = `Não foi possível preparar este arquivo: ${message}`;
+    notice.textContent = 'Falha ao ler a ROM. Confirme que o arquivo é uma ROM válida e tente novamente.';
+    notice.hidden = false;
+  }
   fileInput.value = '';
 });
 
@@ -77,6 +85,7 @@ async function startGame(file, system) {
   const status = document.querySelector('#player-status');
   const mount = document.querySelector('#game-screen');
   mount.replaceChildren();
+  status.textContent = `Lendo ROM local (${formatBytes(file.size)})…`;
   const gameId = await stableGameId(file, system.id);
   const gameUrl = URL.createObjectURL(file);
   running = true;
@@ -102,29 +111,49 @@ async function startGame(file, system) {
       saveSavFiles: true,
       loadSavFiles: true,
     },
-    EJS_ready: () => { status.textContent = 'Jogo iniciado · autosave local habilitado'; },
+    EJS_ready: () => { status.textContent = 'Emulador pronto. Se o jogo aguardar, use o botão ▶ da barra.'; },
+    EJS_onGameStart: () => { status.textContent = 'Jogo iniciado · autosave local habilitado'; },
   });
 
   const script = document.createElement('script');
   script.src = `${EJS_DATA}loader.js`;
   script.async = true;
-  script.onload = () => { status.textContent = 'Núcleo carregado · iniciando o jogo…'; };
+  script.onload = () => { status.textContent = 'Carregando o núcleo e preparando o jogo…'; };
   script.onerror = () => {
     status.textContent = 'Não foi possível carregar o núcleo. Verifique a conexão e recarregue a página.';
     running = false;
     URL.revokeObjectURL(gameUrl);
   };
-  mount.append(script);
+  document.head.append(script);
+  window.setTimeout(() => {
+    if (running && status.textContent.startsWith('Carregando')) {
+      status.textContent = 'O núcleo ainda não respondeu. Verifique a internet, permita o carregamento da CDN e tente novamente; ROMs maiores podem levar mais tempo.';
+    }
+  }, 45000);
 }
 
 async function stableGameId(file, systemId) {
-  // Hash the entire ROM so same-name/same-size games keep distinct save slots.
-  const input = new Uint8Array(await file.arrayBuffer());
+  // Sample both ends rather than copying a large cartridge into memory or blocking the UI.
+  const sampleSize = 64 * 1024;
+  const [head, tail] = await Promise.all([
+    file.slice(0, Math.min(file.size, sampleSize)).arrayBuffer(),
+    file.slice(Math.max(0, file.size - sampleSize)).arrayBuffer(),
+  ]);
+  const bytes = new Uint8Array(head.byteLength + tail.byteLength);
+  bytes.set(new Uint8Array(head));
+  bytes.set(new Uint8Array(tail), head.byteLength);
   const label = new TextEncoder().encode(`${systemId}:${file.name}:${file.size}`);
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of input) hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
-  for (const byte of label) hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
-  return Number(hash & 0x1fffffffffffffn) || 1;
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (const byte of label) {
+    first = Math.imul(first ^ byte, 0x01000193);
+    second = Math.imul(second ^ byte, 0x85ebca6b);
+  }
+  for (const byte of bytes) {
+    first = Math.imul(first ^ byte, 0x01000193);
+    second = Math.imul(second ^ byte, 0x85ebca6b);
+  }
+  return ((first & 0x1fffff) * 0x100000000) + (second >>> 0) || 1;
 }
 
 function formatBytes(bytes) {
