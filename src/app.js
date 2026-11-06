@@ -27,6 +27,8 @@ let selectionSequence = 0;
 let ps1BiosUrl = '';
 let activeExternalUrls = [];
 let activeGameUrl = '';
+let gamepadBridgeFrame = 0;
+let gamepadBridgeInputs = new Map();
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
@@ -144,7 +146,63 @@ const touchPointers = new Map();
 // RetroPad PS1 face mapping: Square=Y(1), Triangle=X(9), Circle=A(8), Cross=B(0).
 const touchInputs = { l: 10, r: 11, l2: 12, r2: 13, x: 1, y: 9, b: 8, a: 0, select: 2, start: 3 };
 function sendTouchInput(index, value) {
-  try { window.EJS_emulator?.gameManager?.simulateInput(0, index, value); } catch (error) { console.warn('Falha no controle virtual PS1', error); }
+  try { window.EJS_emulator?.gameManager?.simulateInput(0, index, value); } catch (error) { console.warn('Falha ao encaminhar controle ao core', error); }
+}
+// Route standard browser gamepads directly into the core as a fallback for
+// EmulatorJS profiles that detect a controller but leave Port 1 unmapped.
+function startGamepadBridge(system) {
+  if (gamepadBridgeFrame) cancelAnimationFrame(gamepadBridgeFrame);
+  gamepadBridgeInputs = new Map();
+  let connectedBefore = false;
+  const buttonMap = [[0, 8], [1, 0], [2, 9], [3, 1], [4, 10], [5, 11], [6, 12], [7, 13], [8, 2], [9, 3], [10, 14], [11, 15]];
+  const poll = () => {
+    if (!running) { releaseGamepadBridgeInputs(); return; }
+    const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+    const pad = pads.find((candidate) => candidate?.connected);
+    if (document.hidden || !pad) {
+      releaseGamepadBridgeInputs();
+      if (connectedBefore && !pad) document.querySelector('#player-status').textContent += ' · gamepad desconectado';
+      connectedBefore = Boolean(pad);
+      gamepadBridgeFrame = requestAnimationFrame(poll);
+      return;
+    }
+    const desired = new Map();
+    for (const [buttonIndex, inputIndex] of buttonMap) {
+      const button = pad.buttons[buttonIndex];
+      if (button && (button.pressed || button.value > 0.5)) desired.set(inputIndex, 1);
+    }
+    for (const [buttonIndex, inputIndex] of [[12, 4], [13, 5], [14, 6], [15, 7]]) {
+      if (pad.buttons[buttonIndex]?.pressed) desired.set(inputIndex, 1);
+    }
+    if (system.id === 'ps1') {
+      const x = pad.axes[0] || 0;
+      const y = pad.axes[1] || 0;
+      if (x < -0.25) desired.set(17, 0x7fff);
+      if (x > 0.25) desired.set(16, 0x7fff);
+      if (y < -0.25) desired.set(19, 0x7fff);
+      if (y > 0.25) desired.set(18, 0x7fff);
+    } else {
+      if ((pad.axes[0] || 0) < -0.5) desired.set(6, 1);
+      if ((pad.axes[0] || 0) > 0.5) desired.set(7, 1);
+      if ((pad.axes[1] || 0) < -0.5) desired.set(4, 1);
+      if ((pad.axes[1] || 0) > 0.5) desired.set(5, 1);
+    }
+    for (const [index, value] of gamepadBridgeInputs) {
+      if (desired.get(index) !== value) sendTouchInput(index, 0);
+    }
+    for (const [index, value] of desired) {
+      if (gamepadBridgeInputs.get(index) !== value) sendTouchInput(index, value);
+    }
+    gamepadBridgeInputs = desired;
+    if (!connectedBefore) document.querySelector('#player-status').textContent += ' · gamepad roteado ao jogador 1';
+    connectedBefore = true;
+    gamepadBridgeFrame = requestAnimationFrame(poll);
+  };
+  gamepadBridgeFrame = requestAnimationFrame(poll);
+}
+function releaseGamepadBridgeInputs() {
+  for (const index of gamepadBridgeInputs.keys()) sendTouchInput(index, 0);
+  gamepadBridgeInputs.clear();
 }
 function setTouchDirection(control, event) {
   const rect = control.getBoundingClientRect();
@@ -661,6 +719,9 @@ document.querySelector('#start-game').addEventListener('click', async () => {
 });
 
 async function startGame(file, system, title = file.name, externalFiles = {}) {
+  if (gamepadBridgeFrame) cancelAnimationFrame(gamepadBridgeFrame);
+  gamepadBridgeFrame = 0;
+  releaseGamepadBridgeInputs();
   player.hidden = false;
   player.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.querySelector('#player-title').textContent = title;
@@ -703,7 +764,9 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       fullscreen: true,
       saveState: true,
       loadState: true,
-      gamepad: system.id !== 'ps1',
+      // Keep EmulatorJS's gamepad toolbar button available on PS1 as before;
+      // the app overlay replaces only its on-screen touch controls.
+      gamepad: true,
       saveSavFiles: true,
       loadSavFiles: true,
     },
@@ -723,6 +786,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       } else {
         status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`;
       }
+      startGamepadBridge(system);
       if (gamepadIndexFix) status.textContent += ' · gamepad compatível ativo';
       requestAnimationFrame(resizeEmulatorViewport);
     },

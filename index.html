@@ -14,7 +14,7 @@
         if (hint) hint.textContent = `Falha ao iniciar o JavaScript: ${event.message || 'consulte o console do navegador'}`;
       });
     </script>
-    <script defer src="./src/app.js" onerror="document.getElementById('start-hint').textContent='Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.'"></script>
+    <script defer src="./src/app.js?v=20261106-padfix" onerror="document.getElementById('start-hint').textContent='Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.'"></script>
   </head>
   <body>
     <noscript><p class="notice">Ative o JavaScript para carregar a seleção de ROM e o emulador.</p></noscript>
@@ -87,7 +87,7 @@
           <div class="touch-layout-actions"><button class="secondary-button" id="touch-edit-toggle" type="button">ARRASTAR CONTROLES</button><button class="secondary-button" id="touch-reset" type="button">RESTAURAR LAYOUT</button></div>
           <p id="touch-control-position" role="status">Escolha D-pad ou analógico. Durante o jogo, toque em “Arrastar controles” para reposicionar os botões.</p>
         </section>
-        <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. O jogo deve abrir diretamente; para ajustes, use o botão Configurações na barra do emulador. Se o iPega não aparecer, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, Bluetooth e Gamepad API dependem do navegador, sistema e modo do controle. No PS1, os controles de toque próprios aparecem sobre o jogo; em outros cores, o controle virtual do EmulatorJS fica na barra. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
+        <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. O layout padrão de gamepad agora é encaminhado automaticamente ao jogador 1; se algum botão estiver trocado, abra Configurações → Controles no emulador e remapeie “Port 1 Controls”. Se o iPega não aparecer no diagnóstico, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, Bluetooth e Gamepad API dependem do navegador, sistema e modo do controle. No PS1, os controles de toque próprios aparecem sobre o jogo; em outros cores, o controle virtual do EmulatorJS fica na barra. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
       </section>
 
       <section class="save-strip">
