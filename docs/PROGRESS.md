@@ -82,5 +82,12 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 
 - O código não consegue trocar o modo Bluetooth do iPega. O navegador só recebe controle como gamepad se o firmware estiver conectado num perfil compatível; o diagnóstico é necessário para descobrir se esse é o caso.
 - Ainda não houve teste físico com o modelo iPega 9023S. O suporte de gamepads em iOS varia por sistema, navegador e perfil do controle, então não é possível prometer ausência de restrições do iOS.
-- Publicação depende de GitHub Pages habilitado para a conta/repositório. Após o primeiro push do workflow, verificar o resultado do GitHub Actions e abrir o endereço HTTPS.
+- GitHub Pages foi habilitado em modo de publicação por workflow; primeiro deploy do Actions concluiu com sucesso e a URL retornou HTTP 200.
 - GBC/GBA seguem como únicos núcleos integrados; N64, Dreamcast, PS1 e PSP continuam planejados.
+
+### Resultado do deploy
+
+- Site publicado: <https://eubrunsllva-sudo.github.io/Retro-arower-arcade/>.
+- Validação observada em 2026-11-06: workflow `Publicar no GitHub Pages` concluído com sucesso; URL respondeu HTTP 200.
+- Verificação local: sintaxe de `src/app.js` aprovada pelo `node --check`.
+- O teste físico do iPega 9023S permanece pendente; usar o painel da página para confirmar a detecção real pelo navegador.

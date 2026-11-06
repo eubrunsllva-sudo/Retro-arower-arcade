@@ -38,7 +38,7 @@ O próximo passo é testar com homebrew legal, validar retomada do SRAM, control
 
 ## Acessar pela nuvem
 
-Quando o GitHub Pages estiver habilitado e o fluxo **Publicar no GitHub Pages** terminar, acesse:
+O GitHub Pages está publicado. Acesse:
 
 `https://eubrunsllva-sudo.github.io/Retro-arower-arcade/`
 
