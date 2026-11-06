@@ -531,15 +531,16 @@ async function prepareDiscCandidate(candidate, sequence) {
   try {
     if (sequence !== selectionSequence) return;
     ps1DiscChooser.hidden = true;
-    const needsExternalAssets = ['.cue', '.m3u'].includes(extensionOf(candidate.entry?.name || ''));
+    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const needsExternalAssets = isAppleMobile && ['.cue', '.m3u'].includes(extensionOf(candidate.entry?.name || ''));
     let gameFile = candidate.entry || candidate.files[0]?.file;
     let externalFiles = {};
     if (needsExternalAssets) {
       const assets = await buildExternalDiscAssets(candidate);
       externalFiles = Object.fromEntries([...assets].map(([path, file]) => [`/${path}`, file]));
-      // Keep cue/m3u as the ROM input and load every companion through the
-      // documented external-files API. This avoids custom ZIP parsing and keeps
-      // each track at its expected path in the core filesystem.
+      // On iOS, avoid a second full-size ZIP buffer. Desktop keeps the proven
+      // bundled CUE/BIN path below; EJS_externalFiles remains the mobile path.
       gameFile = candidate.entry;
     } else if (['.chd', '.pbp', '.iso'].includes(extensionOf(candidate.entry?.name || ''))) {
       gameFile = candidate.entry;

@@ -191,3 +191,10 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Eventos de ponteiro iniciados na camada de toque do PS1 e nos botões do site agora são interrompidos antes de chegar ao frontend do EmulatorJS. Isso corrige o caminho de evento que podia abrir o menu RetroArch quando a pessoa tocava controles ou opções.
 - Leitura das capturas: a imagem do GBA mostra efetivamente uma tela de jogo (`mGBA em execução`); nesse exemplo o problema visível é a interface/controles sobre a imagem. Na captura do PS1, o diagnóstico diz que o arquivo foi montado, mas não confirma que o conteúdo foi aceito; o core segue no menu, então boot de PS1 permanece pendente e não foi mascarado como resolvido.
 - Verificado estaticamente: `node --check src/app.js` e `git diff --check`. Sem iPhone, tablet, ROM/BIOS ou controle físico disponíveis para validar interação/rotação real; publicação precisa ser confirmada após push.
+
+## 2026-11-06 — Regressão provável no carregamento CUE/BIN desktop
+
+- Comparação do histórico localizou uma mudança em `de4f5c5` (19:07): o desktop deixou de empacotar conjuntos CUE/M3U e faixas em ZIP e passou a abrir o índice diretamente com companions em `EJS_externalFiles`. Antes dessa alteração, o caminho `EJS_externalFiles` era restrito a iPhone/iPad para reduzir uso de memória; desktop usava o ZIP local.
+- A captura mais recente é de computador e mostra o menu do PCSX-ReARMed. Restaurei o fluxo ZIP no desktop e mantive `EJS_externalFiles` em iOS. A inicialização automática (`EJS_startOnLoaded`), core e configuração de BIOS não foram alterados.
+- Causa provável, ainda não validada com a ROM do usuário: o caminho novo de companions não está fazendo o core carregar o CUE no desktop. A restauração foi comparada com o estado anterior do código. Falta o usuário testar o mesmo conjunto CUE/BIN; só então será possível confirmar o boot.
+- Fontes: histórico Git local (`de4f5c5` e seu pai); documentação oficial do EmulatorJS para [`EJS_externalFiles`](https://emulatorjs.org/docs/options/) descreve caminhos no filesystem virtual, mas não garante comportamento de todo CUE/BIN ou core.
