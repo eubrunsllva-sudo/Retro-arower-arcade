@@ -15,6 +15,7 @@ Projeto de emulação retrô para navegador, com interface em português e seis 
 ## Rodar localmente
 
 Como esta etapa usa apenas HTML, CSS e JavaScript, não há dependências npm.
+Abra pelo servidor local indicado abaixo (ou pelo GitHub Pages); não dê duplo clique em `index.html`. O motor WebAssembly depende de uma origem web segura/servida. A interface mostrará se o JavaScript do app não iniciou.
 
 ```powershell
 cd outputs/retro-browser

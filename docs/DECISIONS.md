@@ -20,6 +20,8 @@ Fontes primárias consultadas:
 - [Configuração do Game Boy](https://emulatorjs.org/docs/systems/nintendo-game-boy/) e [GBA](https://emulatorjs.org/docs/systems/nintendo-game-boy-advance/) — valores de sistema/core e BIOS opcional.
 - [Opções EmulatorJS](https://emulatorjs.org/docs/options/) — `EJS_fixedSaveInterval` e evento `saveSaveFiles`.
 - [Release 4.2.3](https://github.com/EmulatorJS/EmulatorJS/releases/tag/4.2.3) — versão estável fixada no loader.
+- [MDN: módulos JavaScript na web](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules/Modules_on_the_web) — `file://` não carrega módulos por CORS; o app agora usa script clássico deferido por não precisar de import/export.
+- [MDN: seleção de arquivos](https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications) — input entrega ao app um objeto `File` depois da escolha explícita.
 - [WebRetro](https://github.com/binbashbanana/webretro) — alternativa WebAssembly e lista declarada de cores.
 - [Flycast WASM](https://github.com/nasomers/flycast-wasm) — candidato experimental para Dreamcast no browser.
 - [Relato técnico do Flycast WASM](https://github.com/nasomers/flycast-wasm/blob/main/TECHNICAL_WRITEUP.md) — detalhes e limitações do port.

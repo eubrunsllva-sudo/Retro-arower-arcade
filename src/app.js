@@ -196,3 +196,8 @@ document.querySelector('#reload-session').addEventListener('click', reloadPage);
 const aboutDialog = document.querySelector('#about-dialog');
 document.querySelector('#about-button').addEventListener('click', () => aboutDialog.showModal());
 document.querySelector('#close-dialog').addEventListener('click', () => aboutDialog.close());
+
+window.retroBrowserAppReady = true;
+document.querySelector('#start-hint').textContent = location.protocol === 'file:'
+  ? 'Interface carregada. Para iniciar o motor WebAssembly, abra o projeto por um servidor local (instruções no README).'
+  : 'Interface carregada. Selecione uma ROM GBC ou GBA para confirmar a leitura local.';
