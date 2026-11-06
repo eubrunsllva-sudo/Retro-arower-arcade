@@ -133,3 +133,9 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - O app constrói um ZIP temporário local, sem envio, para o núcleo reconhecer CUE/M3U e caminhos de faixa. Imagens `.chd`, `.pbp` e `.iso` individuais seguem o fluxo anterior.
 - Verificado: `node --check src/app.js`. Ainda falta validar extração do pacote e inicialização/áudio/troca de disco com ROM de uso legítimo em navegadores reais; portanto PS1 continua experimental.
 - Firmware proprietário não foi incluído nem baixado; BIOS própria permanece opcional, com HLE como alternativa sujeita a compatibilidade variável.
+
+## 2026-11-06 — Descoberta completa de jogos PS1 e mapa de controle
+
+- Corrigida a varredura de pasta: antes escolhia apenas M3U, ou CUE, ou imagens individuais; agora considera as três classes, evita duplicar discos já listados e inclui BIN sem CUE como candidatos provisórios. Faixas cujo nome termina em `Track NN` são agrupadas. BIN sem índice segue sujeito a falha de inicialização.
+- Adicionado `EJS_defaultControls` explícito para o jogador 1 no PS1, usando os nomes de controle recomendados na documentação do EmulatorJS. O diagnóstico do navegador continua útil para confirmar conexão e botões pressionados; eventual diferença de mapeamento deve ser corrigida em Configurações → Controles.
+- Verificado: `node --check src/app.js` e `git diff --check`. Ainda não houve teste real de boot de todos os formatos nem de cada botão do iPega no jogo.

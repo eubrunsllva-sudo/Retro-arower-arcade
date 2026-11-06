@@ -28,6 +28,18 @@ let ps1BiosUrl = '';
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
+// Explicit EmulatorJS defaults: each value2 is a RetroPad control name.
+// This makes the PS1 core's first-player pad usable without relying on a
+// previously saved controller profile in this browser.
+const PS1_DEFAULT_CONTROLS = {
+  0: { 0: { value: 'x', value2: 'BUTTON_2' }, 1: { value: 's', value2: 'BUTTON_4' }, 2: { value: 'v', value2: 'SELECT' }, 3: { value: 'enter', value2: 'START' },
+    4: { value: 'up arrow', value2: 'DPAD_UP' }, 5: { value: 'down arrow', value2: 'DPAD_DOWN' }, 6: { value: 'left arrow', value2: 'DPAD_LEFT' }, 7: { value: 'right arrow', value2: 'DPAD_RIGHT' },
+    8: { value: 'z', value2: 'BUTTON_1' }, 9: { value: 'a', value2: 'BUTTON_3' }, 10: { value: 'q', value2: 'LEFT_TOP_SHOULDER' }, 11: { value: 'e', value2: 'RIGHT_TOP_SHOULDER' },
+    12: { value: 'tab', value2: 'LEFT_BOTTOM_SHOULDER' }, 13: { value: 'r', value2: 'RIGHT_BOTTOM_SHOULDER' }, 14: { value: '', value2: 'LEFT_STICK' }, 15: { value: '', value2: 'RIGHT_STICK' },
+    16: { value: 'h', value2: 'LEFT_STICK_X:+1' }, 17: { value: 'f', value2: 'LEFT_STICK_X:-1' }, 18: { value: 'g', value2: 'LEFT_STICK_Y:+1' }, 19: { value: 't', value2: 'LEFT_STICK_Y:-1' },
+    20: { value: 'l', value2: 'RIGHT_STICK_X:+1' }, 21: { value: 'j', value2: 'RIGHT_STICK_X:-1' }, 22: { value: 'k', value2: 'RIGHT_STICK_Y:+1' }, 23: { value: 'i', value2: 'RIGHT_STICK_Y:-1' } },
+  1: {}, 2: {}, 3: {},
+};
 
 grid.innerHTML = systems.map((system, index) => `
   <article class="console-card ${system.color} ${system.active ? 'console-active' : ''}">
@@ -75,7 +87,7 @@ async function handleSelectedFiles(files) {
 
   const extensions = files.map((file) => extensionOf(file.name));
   const hasPs1Structure = extensions.some((ext) => ['.cue', '.m3u'].includes(ext));
-  if (hasPs1Structure || (files.length > 1 && files.some((file) => ['.bin', '.chd', '.pbp', '.iso'].includes(extensionOf(file.name))))) {
+  if (hasPs1Structure || extensions.includes('.bin') || (files.length > 1 && files.some((file) => ['.chd', '.pbp', '.iso'].includes(extensionOf(file.name))))) {
     await preparePs1Selection(files, sequence);
     return;
   }
@@ -108,20 +120,41 @@ async function preparePs1Selection(files, sequence) {
   const m3uFiles = files.filter((file) => extensionOf(file.name) === '.m3u');
   const cueFiles = files.filter((file) => extensionOf(file.name) === '.cue');
   const standalone = files.filter((file) => ['.chd', '.pbp', '.iso'].includes(extensionOf(file.name)));
-  const entries = m3uFiles.length ? m3uFiles : cueFiles.length ? cueFiles : standalone;
+  const entries = [...m3uFiles, ...cueFiles, ...standalone];
   if (!entries.length) {
-    showSelectionError('Nenhum CUE/M3U ou disco individual CHD/PBP/ISO foi encontrado. Um BIN precisa do CUE correspondente.');
+    const rawBins = files.filter((file) => extensionOf(file.name) === '.bin');
+    if (rawBins.length) {
+      await prepareRawBinCandidates(rawBins, files, sequence);
+      return;
+    }
+    showSelectionError('Nenhum CUE/M3U ou disco individual CHD/PBP/ISO foi encontrado.');
     return;
   }
 
   const candidates = [];
   const missing = new Set();
+  const seenDiscs = new Set();
   for (const entry of entries) {
     const result = await collectDiscFiles(entry, files);
     if (sequence !== selectionSequence) return;
-    if (result.files) candidates.push({ title: titleFromName(entry.name), entry, files: result.files });
+    if (result.files) {
+      const media = result.files.filter((item) => !['.cue', '.m3u', '.sbi'].includes(extensionOf(item.file.name)));
+      if (media.length && media.every((item) => seenDiscs.has(item.file))) continue;
+      media.forEach((item) => seenDiscs.add(item.file));
+      candidates.push({ title: titleFromName(entry.name), entry, files: result.files });
+    }
     else result.missing.forEach((name) => missing.add(name));
   }
+  const referencedBins = new Set();
+  for (const cue of cueFiles) {
+    const text = await readDiscText(cue);
+    for (const match of text.matchAll(/^\s*FILE\s+(?:"([^"]+)"|([^\s]+))\s+[^\r\n]+/gim)) {
+      const bin = resolveDiscReference(match[1] || match[2], cue, files);
+      if (bin) referencedBins.add(bin);
+    }
+  }
+  const orphanBins = files.filter((file) => extensionOf(file.name) === '.bin' && !referencedBins.has(file));
+  if (orphanBins.length) candidates.push(...makeRawBinCandidates(orphanBins));
   if (!candidates.length) {
     const list = [...missing].slice(0, 5).join(', ');
     showSelectionError(list
@@ -147,6 +180,45 @@ async function preparePs1Selection(files, sequence) {
   document.querySelector('#selected-system').textContent = 'PS1';
   document.querySelector('#selection-message').textContent = 'Escolha o título e toque em “Preparar este jogo”.';
   document.querySelector('#start-hint').textContent = 'As faixas serão empacotadas localmente para o core; nada é enviado.';
+  notice.hidden = true;
+}
+
+function makeRawBinCandidates(files) {
+  const groups = new Map();
+  const singles = [];
+  for (const file of files) {
+    const match = file.name.match(/^(.*?)(?:\s*\(\s*track\s*\d+\s*\)|\s+track\s*\d+)\.bin$/i);
+    if (!match) { singles.push(file); continue; }
+    const title = match[1].trim();
+    if (!groups.has(title.toLowerCase())) groups.set(title.toLowerCase(), { title, files: [] });
+    groups.get(title.toLowerCase()).files.push(file);
+  }
+  const candidates = [...groups.values()].map(({ title, files: tracks }) => ({
+    title: `${title} (BIN sem CUE)`,
+    files: tracks.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((file) => ({ path: file.webkitRelativePath || file.name, file })),
+  }));
+  candidates.push(...singles.map((file) => ({ title: `${titleFromName(file.name)} (BIN sem CUE)`, files: [{ path: file.webkitRelativePath || file.name, file }] })));
+  return candidates;
+}
+
+async function prepareRawBinCandidates(bins, allFiles, sequence) {
+  const candidates = makeRawBinCandidates(bins);
+  if (!candidates.length) return;
+  if (candidates.length === 1) {
+    await prepareDiscCandidate(candidates[0], sequence);
+    return;
+  }
+  ps1Candidates = candidates;
+  ps1DiscSelect.replaceChildren(...candidates.map((candidate, index) => {
+    const option = document.createElement('option'); option.value = String(index); option.textContent = candidate.title; return option;
+  }));
+  ps1DiscChooser.hidden = false;
+  document.querySelector('#ps1-firmware').hidden = false;
+  document.querySelector('#selected-name').textContent = `${candidates.length} jogos/arquivos BIN sem CUE`;
+  document.querySelector('#selected-meta').textContent = `${allFiles.length} arquivos selecionados · confira se cada BIN é um disco completo`;
+  document.querySelector('#selected-system').textContent = 'PS1';
+  document.querySelector('#selection-message').textContent = 'Arquivos BIN sem CUE foram listados. Faixas de disco podem exigir o CUE original para funcionar corretamente.';
+  document.querySelector('#start-hint').textContent = 'Selecione um BIN e toque em “Preparar este jogo”.';
   notice.hidden = true;
 }
 
@@ -391,6 +463,7 @@ async function startGame(file, system, title = file.name) {
     EJS_startOnLoaded: true,
     EJS_color: '#d6fa6a',
     EJS_fixedSaveInterval: 30000,
+    ...(system.id === 'ps1' ? { EJS_defaultControls: PS1_DEFAULT_CONTROLS } : {}),
     EJS_Buttons: {
       playPause: true,
       restart: true,
