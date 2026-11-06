@@ -39,8 +39,11 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 #game-screen.ps1-touch-controls-enabled .ejs_virtualGamepad_parent{display:none!important}
 .ps1-touch-controls{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;touch-action:none}
 .ps1-touch-controls .touch-edit-float{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:auto;height:30px;padding:0 10px;border-radius:15px;background:#111c;color:var(--lime);font:8px var(--mono);pointer-events:auto;z-index:8}
+.ps1-touch-controls .touch-visibility-float{position:absolute;top:8px;right:8px;width:auto;height:30px;padding:0 10px;border-radius:15px;background:#111c;color:var(--lime);font:8px var(--mono);pointer-events:auto;z-index:8}
 .ps1-touch-controls [data-touch-control]{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .ps1-touch-controls [data-touch-control][hidden]{display:none!important}
+.ps1-touch-controls.controls-hidden [data-touch-control]{visibility:hidden;pointer-events:none}
+.ps1-touch-controls.controls-hidden .touch-edit-float{display:none}
 .ps1-touch-controls button{display:grid;place-items:center;margin:0;padding:0;color:#fff;background:#777b80a8;border:1.5px solid #ffffffa8;box-shadow:0 2px 6px #0006;font:600 21px var(--sans);cursor:pointer}
 .ps1-touch-controls .touch-dpad{width:clamp(96px,26vmin,144px);height:clamp(96px,26vmin,144px);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);place-items:center;color:#fff;background:#55585eaa;border:1px solid #ffffff70;border-radius:24%;font:18px var(--sans)}
 .ps1-touch-controls .touch-dpad i{font-style:normal;display:grid;place-items:center;width:100%;height:100%;background:#777b80cc}.ps1-touch-controls .touch-dpad i:nth-child(1){grid-area:1/2}.ps1-touch-controls .touch-dpad i:nth-child(2){grid-area:2/1}.ps1-touch-controls .touch-dpad i:nth-child(3){grid-area:2/2;border-radius:50%}.ps1-touch-controls .touch-dpad i:nth-child(4){grid-area:2/3}.ps1-touch-controls .touch-dpad i:nth-child(5){grid-area:3/2}
@@ -52,3 +55,4 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .ps1-touch-controls.editing [data-touch-control]{outline:2px dashed var(--lime);outline-offset:3px;cursor:move;touch-action:none}
 .ps1-touch-controls.editing::after{content:'ARRASTE OS CONTROLES';position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:6px 9px;background:#111d;color:var(--lime);font:9px var(--mono);pointer-events:none}
 @media(orientation:landscape) and (max-height:600px){.ps1-touch-controls .touch-dpad{width:clamp(78px,22vmin,112px);height:clamp(78px,22vmin,112px)}.ps1-touch-controls .touch-stick{width:clamp(82px,23vmin,118px);height:clamp(82px,23vmin,118px)}.ps1-touch-controls .touch-face{width:clamp(36px,9vmin,48px);height:clamp(36px,9vmin,48px);font-size:clamp(17px,5vmin,25px)}}
+@media(pointer:fine){.ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none}}

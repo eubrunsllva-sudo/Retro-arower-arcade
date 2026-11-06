@@ -45,6 +45,7 @@ const PS1_DEFAULT_CONTROLS = {
   1: {}, 2: {}, 3: {},
 };
 const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v2';
+const TOUCH_VISIBILITY_KEY = 'retro-arower-ps1-touch-visibility-v1';
 const DEFAULT_TOUCH_LAYOUT = {
   mode: 'dpad',
   controls: {
@@ -67,7 +68,15 @@ function readTouchLayout() {
   } catch { return JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)); }
 }
 let touchLayout = readTouchLayout();
+let touchVisibilityPreference = (() => {
+  try {
+    const saved = localStorage.getItem(TOUCH_VISIBILITY_KEY);
+    return ['show', 'hide'].includes(saved) ? saved : 'auto';
+  } catch { return 'auto'; }
+})();
+let gamepadConnectedForTouch = false;
 const touchEditButton = document.querySelector('#touch-edit-toggle');
+const touchVisibleButton = document.querySelector('#touch-visible-toggle');
 const touchStatus = document.querySelector('#touch-control-position');
 const touchMode = document.querySelector('#touch-mode');
 touchMode.value = touchLayout.mode;
@@ -89,7 +98,37 @@ touchEditButton.addEventListener('click', () => {
     touchStatus.textContent = 'Inicie um jogo PS1 para organizar os controles.';
     return;
   }
+  if (root.classList.contains('controls-hidden') && !gamepadConnectedForTouch) {
+    touchVisibilityPreference = 'show';
+    persistTouchVisibilityPreference();
+    updatePs1TouchVisibility();
+  }
   setTouchEditMode(root, !root.classList.contains('editing'));
+});
+function persistTouchVisibilityPreference() {
+  try { localStorage.setItem(TOUCH_VISIBILITY_KEY, touchVisibilityPreference); } catch { /* Keep the setting for this session. */ }
+}
+function updatePs1TouchVisibility(gamepadConnected = gamepadConnectedForTouch) {
+  gamepadConnectedForTouch = Boolean(gamepadConnected);
+  const root = document.querySelector('#ps1-touch-controls');
+  if (!root) return;
+  const touchDevice = matchMedia('(pointer: coarse)').matches || window.innerWidth <= 760;
+  const visible = !gamepadConnectedForTouch && (touchVisibilityPreference === 'show' || (touchVisibilityPreference === 'auto' && touchDevice));
+  root.classList.toggle('controls-hidden', !visible);
+  const label = visible ? 'OCULTAR CONTROLES' : 'MOSTRAR CONTROLES';
+  touchVisibleButton.textContent = label;
+  const floatingButton = root.querySelector('.touch-visibility-float');
+  if (floatingButton) floatingButton.textContent = visible ? 'OCULTAR' : 'MOSTRAR';
+  if (gamepadConnectedForTouch) touchStatus.textContent = 'Gamepad detectado: controles de toque ocultos automaticamente.';
+  else if (touchVisibilityPreference === 'auto' && !touchDevice) touchStatus.textContent = 'Controles ocultos no computador. Em telas sensíveis ao toque, aparecem automaticamente; você também pode alternar quando quiser.';
+  else touchStatus.textContent = visible ? 'Controles de toque visíveis. Use “Ocultar controles” para liberar a tela.' : 'Controles de toque ocultos. Use “Mostrar controles” para jogar na tela.';
+}
+touchVisibleButton.addEventListener('click', () => {
+  const root = document.querySelector('#ps1-touch-controls');
+  const currentlyVisible = root ? !root.classList.contains('controls-hidden') : touchVisibilityPreference !== 'hide';
+  touchVisibilityPreference = currentlyVisible ? 'hide' : 'show';
+  persistTouchVisibilityPreference();
+  updatePs1TouchVisibility();
 });
 function setTouchEditMode(root, editing) {
   root.classList.toggle('editing', editing);
@@ -125,7 +164,7 @@ function initializePs1TouchControls() {
     root = document.createElement('div');
     root.id = 'ps1-touch-controls';
     root.className = 'ps1-touch-controls';
-    root.innerHTML = `<button class="touch-edit-float" type="button">MOVER BOTÕES</button>
+    root.innerHTML = `<button class="touch-edit-float" type="button">MOVER BOTÕES</button><button class="touch-visibility-float" type="button">OCULTAR</button>
       <div class="touch-dpad" data-touch-control="dpad" aria-label="Direcional digital"><i>▲</i><i>◀</i><i>●</i><i>▶</i><i>▼</i></div>
       <div class="touch-stick" data-touch-control="stick" aria-label="Direcional analógico"><span></span></div>
       <button class="touch-shoulder" data-touch-control="l" type="button">L1</button><button class="touch-shoulder" data-touch-control="r" type="button">R1</button><button class="touch-shoulder" data-touch-control="l2" type="button">L2</button><button class="touch-shoulder" data-touch-control="r2" type="button">R2</button>
@@ -137,10 +176,16 @@ function initializePs1TouchControls() {
     root.addEventListener('pointerup', (event) => handleTouchControlUp(event));
     root.addEventListener('pointercancel', (event) => handleTouchControlUp(event));
     root.querySelector('.touch-edit-float').addEventListener('click', () => setTouchEditMode(root, !root.classList.contains('editing')));
+    root.querySelector('.touch-visibility-float').addEventListener('click', () => {
+      touchVisibilityPreference = root.classList.contains('controls-hidden') ? 'show' : 'hide';
+      persistTouchVisibilityPreference();
+      updatePs1TouchVisibility();
+    });
   }
   mount.querySelector('.ejs_virtualGamepad_parent')?.setAttribute('aria-hidden', 'true');
   renderTouchControlMode();
   placeTouchControls();
+  updatePs1TouchVisibility();
 }
 const touchPointers = new Map();
 // RetroPad PS1 face mapping: Square=Y(1), Triangle=X(9), Circle=A(8), Cross=B(0).
@@ -159,6 +204,7 @@ function startGamepadBridge(system) {
     if (!running) { releaseGamepadBridgeInputs(); return; }
     const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
     const pad = pads.find((candidate) => candidate?.connected);
+    if (system.id === 'ps1' && Boolean(pad) !== gamepadConnectedForTouch) updatePs1TouchVisibility(Boolean(pad));
     if (document.hidden || !pad) {
       releaseGamepadBridgeInputs();
       if (connectedBefore && !pad) document.querySelector('#player-status').textContent += ' · gamepad desconectado';
@@ -781,8 +827,8 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
         let mounted = false;
         try { mounted = Boolean(path && emulator.gameManager.FS.analyzePath(path).exists); } catch { /* Keep a clear fallback status. */ }
         status.textContent = mounted
-          ? `PCSX-ReARMed ativo · arquivo presente no core: ${emulator.fileName}. Se o menu RetroArch continuar, o formato não foi aceito.`
-          : `Core PS1 abriu sem confirmar a ROM (${emulator?.fileName || 'arquivo não identificado'}). Verifique o formato CUE/BIN.`;
+          ? `PCSX-ReARMed abriu · arquivo presente no core: ${emulator.fileName} · jogo ainda não confirmado; se o menu continuar, a ROM não iniciou.`
+          : `Core PS1 abriu, mas não confirmou a ROM (${emulator?.fileName || 'arquivo não identificado'}). Verifique o conjunto CUE/BIN.`;
       } else {
         status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`;
       }
@@ -933,6 +979,7 @@ document.addEventListener('visibilitychange', handleEmulatorVisibility);
 window.addEventListener('pageshow', handleEmulatorVisibility);
 window.addEventListener('orientationchange', () => window.setTimeout(resizeEmulatorViewport, 250));
 window.visualViewport?.addEventListener('resize', () => window.requestAnimationFrame(resizeEmulatorViewport));
+window.addEventListener('resize', () => updatePs1TouchVisibility());
 
 async function enterGameFullscreen() {
   document.body.classList.add('game-fullscreen');
