@@ -28,6 +28,9 @@
           </div>
           <input id="game-file" type="file" hidden accept=".gb,.gbc,.gba,.n64,.z64,.v64,.iso,.bin,.cue,.pbp,.chd,.cso,.zip" />
           <p class="microcopy start-hint" id="start-hint">Escolha uma ROM compatível; depois o botão Iniciar jogo será habilitado.</p>
+          <section class="selected-game" id="selected-game" aria-live="polite">
+            <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">JOGO SELECIONADO</span><strong id="selected-name">Nenhum jogo selecionado</strong><span id="selected-meta">Selecione um arquivo .gb, .gbc ou .gba.</span><span id="selection-message">O nome aparecerá aqui após confirmar o arquivo na janela do sistema.</span></div><span class="selected-tag" id="selected-system">—</span>
+          </section>
           <p class="microcopy">O arquivo é aberto localmente. Nada é enviado nesta versão.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -42,10 +45,6 @@
       <section class="library-section">
         <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Seis mundos. <span>Uma tela.</span></h2></div><span class="section-note">GBC e GBA: núcleo integrado em fase experimental.</span></div>
         <div class="console-grid" id="console-grid" aria-label="Consoles planejados"></div>
-      </section>
-
-      <section class="selected-game" id="selected-game" hidden aria-live="polite">
-        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span><span id="selection-message">Escolha um jogo para começar.</span></div><span class="selected-tag" id="selected-system"></span>
       </section>
 
       <section class="notice" id="notice" hidden role="status"></section>

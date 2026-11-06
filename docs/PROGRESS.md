@@ -37,6 +37,8 @@
 - Interface e avisos agora distinguem sistemas experimentais e sistemas ainda planejados.
 - A partida agora exige ação clara: selecionar uma ROM mostra o resumo e habilita **Iniciar jogo**. Encerrar continua separado e não confunde a seleção do arquivo com o início.
 - Correção após novo relato: **Iniciar jogo** agora fica sempre visível ao lado de **Escolher um jogo** na tela inicial, desativado até a seleção de uma ROM compatível. **Recarregar página** está disponível no início e durante a sessão.
+- O nome do jogo e o sistema agora ficam logo abaixo dos botões. A seleção lê uma amostra de 4 KiB antes de habilitar Iniciar e informa que a leitura local foi confirmada; erro de arquivo vazio/leitura é mostrado na página.
+- O status da sessão identifica quando o callback de prontidão do EmulatorJS 4.2.3 dispara e quando o evento de início do core dispara. Assim, a tela distingue ROM selecionada de core realmente inicializado.
 - Barra do EmulatorJS habilitada com pausa/retomar, reinício, configurações de controle, tela cheia, save/load state e exportação/importação de SRAM suportadas pelo motor.
 - Identificador de save considera amostras dos dados e nome/tamanho, sem exigir cópia/hash completo da ROM.
 
@@ -47,8 +49,9 @@
 - Falha inicial: a etapa anterior apenas identificava arquivos. Corrigido ligando a seleção ao loader e impedindo que consoles sem integração sejam apresentados como iniciáveis.
 - Falha relatada no teste: não havia botão explícito de início e a tela não explicava as opções de controle. Corrigido com fluxo de seleção → iniciar e explicação dos controles na sessão.
 - Esclarecimento de interface: o botão de início anterior só aparecia na seção de arquivo selecionado, abaixo da estante. Movido para a área principal do início conforme o fluxo esperado; o botão de recarga deixa explícito que será necessário reescolher a ROM.
+- Captura mais recente ainda mostrava “Escolha uma ROM…” e botão desativado, então a página não havia registrado um arquivo selecionado naquela tela. Movido o recibo do arquivo para o início para expor o nome e o estado imediatamente após o evento do seletor.
 - O cartão SD não muda a API de leitura: após escolher um arquivo, o navegador fornece um `File` como em qualquer outra unidade. I/O lento ou arquivo inválido ainda podem falhar; a interface agora mostra etapas e erro em vez de parecer não responder.
-- Teste simulado do fluxo (seleção GBA → iniciar → core/loader/controles) passou. Teste com ROM real continua pendente; o navegador local não pôde ser controlado nesta sessão.
+- Teste simulado do fluxo (nome de arquivo → leitura amostra → início → core/loader/estado/controladores/recarregar) passou. Teste com ROM real continua pendente; o navegador local não pôde ser controlado nesta sessão.
 - A pasta comum do navegador não pode ser escolhida como catálogo inteiro pelo seletor HTML usado aqui; o usuário escolhe um arquivo ROM de cada vez. Não há acesso recursivo ao aparelho.
 
 ### Limitações conhecidas

@@ -15,6 +15,7 @@ const notice = document.querySelector('#notice');
 const player = document.querySelector('#player-section');
 let running = false;
 let pendingGame = null;
+let selectionSequence = 0;
 
 grid.innerHTML = systems.map((system, index) => `
   <article class="console-card ${system.color} ${system.active ? 'console-active' : ''}">
@@ -26,6 +27,8 @@ grid.innerHTML = systems.map((system, index) => `
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files?.[0];
   if (!file) return;
+  const sequence = ++selectionSequence;
+  fileInput.value = '';
   const extension = `.${file.name.split('.').pop().toLowerCase()}`;
   const matches = systems.filter((system) => system.extensions.includes(extension));
   const system = matches.length === 1 ? matches[0] : null;
@@ -33,15 +36,14 @@ fileInput.addEventListener('change', async () => {
   document.querySelector('#selected-name').textContent = file.name;
   document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · arquivo permanece neste dispositivo`;
   document.querySelector('#selected-system').textContent = system?.short ?? (matches.length ? 'FORMATO COMPARTILHADO' : 'FORMATO A CONFERIR');
-  document.querySelector('#selected-game').hidden = false;
-  pendingGame = system?.active ? { file, system } : null;
+  pendingGame = null;
   const startButton = document.querySelector('#start-game');
-  startButton.disabled = !pendingGame || running;
-  document.querySelector('#selection-message').textContent = pendingGame
-    ? 'Arquivo pronto. Pressione “Iniciar jogo” para carregar o emulador.'
+  startButton.disabled = true;
+  document.querySelector('#selection-message').textContent = system?.active
+    ? 'Arquivo recebido. Verificando se o navegador consegue ler a ROM…'
     : 'Este formato ainda não pode ser iniciado nesta fase.';
-  document.querySelector('#start-hint').textContent = pendingGame
-    ? 'ROM selecionada. O botão Iniciar jogo está pronto.'
+  document.querySelector('#start-hint').textContent = system?.active
+    ? `Arquivo selecionado. Lendo uma amostra local de ${file.name}…`
     : 'Escolha uma ROM GBC ou GBA compatível para habilitar Iniciar jogo.';
   notice.hidden = false;
 
@@ -49,19 +51,35 @@ fileInput.addEventListener('change', async () => {
     notice.textContent = system
       ? `${system.name} está no plano, mas seu núcleo ainda não foi integrado. Nenhum jogo será iniciado.`
       : 'Não foi possível identificar um console compatível sem ambiguidade. Formatos de disco compartilhados serão tratados nas etapas seguintes.';
-    fileInput.value = '';
     return;
   }
+
+  const sampleBytes = Math.min(file.size, 4096);
+  try {
+    if (!file.size) throw new Error('o arquivo está vazio');
+    const sample = await file.slice(0, sampleBytes).arrayBuffer();
+    if (!sample.byteLength) throw new Error('não foi possível ler os dados do arquivo');
+  } catch (error) {
+    if (sequence !== selectionSequence) return;
+    const detail = error instanceof Error ? error.message : 'erro de leitura';
+    document.querySelector('#selection-message').textContent = `Falha ao ler o arquivo: ${detail}.`;
+    document.querySelector('#start-hint').textContent = 'O navegador não conseguiu ler essa ROM. Tente selecioná-la novamente.';
+    notice.textContent = 'A ROM foi selecionada, mas o navegador não conseguiu ler seu conteúdo. O arquivo continua no dispositivo.';
+    return;
+  }
+  if (sequence !== selectionSequence) return;
+
   if (running) {
-    pendingGame = null;
-    startButton.disabled = true;
     document.querySelector('#selection-message').textContent = 'Encerre a sessão atual antes de iniciar outro jogo.';
     document.querySelector('#start-hint').textContent = 'Uma sessão já está aberta; recarregue a página antes de iniciar outro jogo.';
     notice.textContent = 'Já existe um jogo aberto. Encerre a sessão atual antes de iniciar outro.';
-    return;
+  } else {
+    pendingGame = { file, system };
+    startButton.disabled = false;
+    document.querySelector('#selection-message').textContent = `Leitura local confirmada (${formatBytes(sampleBytes)}). Pressione “Iniciar jogo”.`;
+    document.querySelector('#start-hint').textContent = `Pronto para iniciar: ${file.name}`;
+    notice.textContent = 'ROM lida localmente e pronta. O arquivo não foi enviado.';
   }
-  notice.textContent = 'Arquivo preparado. Confira o nome e pressione “Iniciar jogo”.';
-  fileInput.value = '';
 });
 
 document.querySelector('#start-game').addEventListener('click', async () => {
@@ -117,8 +135,8 @@ async function startGame(file, system) {
       saveSavFiles: true,
       loadSavFiles: true,
     },
-    EJS_ready: () => { status.textContent = 'Emulador pronto. Se o jogo aguardar, use o botão ▶ da barra.'; },
-    EJS_onGameStart: () => { status.textContent = 'Jogo iniciado · autosave local habilitado'; },
+    EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${system.core === 'gba' ? 'mGBA' : 'Gambatte'}).`; },
+    EJS_onGameStart: () => { status.textContent = `${system.core === 'gba' ? 'mGBA' : 'Gambatte'} em execução · autosave local habilitado`; },
   });
 
   const script = document.createElement('script');
