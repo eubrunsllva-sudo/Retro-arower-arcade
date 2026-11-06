@@ -18,6 +18,8 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .touch-control-body{display:grid;gap:11px;padding:0 14px 14px}
 .touch-settings-toggle{position:absolute;z-index:20;right:8px;top:8px;min-height:30px;padding:0 10px;border:1px solid #ffffff70;border-radius:16px;background:#111c;color:var(--lime);font:8px var(--mono);cursor:pointer;touch-action:manipulation}
 .touch-settings-toggle[hidden]{display:none!important}
+.emulator-menu-toggle{position:absolute;z-index:20;right:50px;top:8px;width:34px;min-width:34px;min-height:30px;padding:0;border:1px solid #ffffff70;border-radius:16px;background:#111c;color:var(--lime);font:15px var(--sans);cursor:pointer;touch-action:manipulation}
+.emulator-menu-toggle[hidden]{display:none!important}
 #game-screen.virtual-controls-hidden .ejs_virtualGamepad_parent{display:none!important}
 #game-screen.ps1-touch-controls-enabled .ejs_virtualGamepad_parent{display:none!important}
 .ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none!important}
@@ -81,8 +83,10 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .ps1-touch-controls.controls-hidden .touch-edit-float{display:none}
 .ps1-touch-controls button{display:grid;place-items:center;margin:0;padding:0;color:#fff;background:#777b80a8;border:1.5px solid #ffffffa8;box-shadow:0 2px 6px #0006;font:600 21px var(--sans);cursor:pointer}
 .ps1-touch-controls .touch-dpad{width:clamp(96px,26vmin,144px);height:clamp(96px,26vmin,144px);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);place-items:center;color:#fff;background:#55585eaa;border:1px solid #ffffff70;border-radius:24%;font:18px var(--sans)}
+.ps1-touch-controls .touch-dpad{width:var(--touch-dpad-size,144px);height:var(--touch-dpad-size,144px)}
 .ps1-touch-controls .touch-dpad i{font-style:normal;display:grid;place-items:center;width:100%;height:100%;background:#777b80cc}.ps1-touch-controls .touch-dpad i:nth-child(1){grid-area:1/2}.ps1-touch-controls .touch-dpad i:nth-child(2){grid-area:2/1}.ps1-touch-controls .touch-dpad i:nth-child(3){grid-area:2/2;border-radius:50%}.ps1-touch-controls .touch-dpad i:nth-child(4){grid-area:2/3}.ps1-touch-controls .touch-dpad i:nth-child(5){grid-area:3/2}
 .ps1-touch-controls .touch-stick{width:clamp(100px,27vmin,148px);height:clamp(100px,27vmin,148px);display:grid;place-items:center;border:2px solid #ffffff99;border-radius:50%;background:#45495088;box-shadow:inset 0 0 0 12px #ffffff12}
+.ps1-touch-controls .touch-stick{width:var(--touch-stick-size,148px);height:var(--touch-stick-size,148px)}
 .ps1-touch-controls .touch-stick span{width:42%;height:42%;border:2px solid #ffffffbb;border-radius:50%;background:#a4303bcc;box-shadow:0 2px 8px #0008;pointer-events:none}
 .ps1-touch-controls .touch-face{width:clamp(42px,11vmin,62px);height:clamp(42px,11vmin,62px);border-radius:50%;font-size:clamp(20px,6vmin,34px)}
 .ps1-touch-controls .touch-shoulder{width:clamp(52px,15vmin,78px);height:clamp(32px,8vmin,42px);border-radius:10px;font:12px var(--mono)}
@@ -90,6 +94,8 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .ps1-touch-controls.editing [data-touch-control]{outline:2px dashed var(--lime);outline-offset:3px;cursor:move;touch-action:none}
 .ps1-touch-controls.editing::after{content:'ARRASTE OS CONTROLES';position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:6px 9px;background:#111d;color:var(--lime);font:9px var(--mono);pointer-events:none}
 @media(orientation:landscape) and (max-height:600px){.ps1-touch-controls .touch-dpad{width:clamp(78px,22vmin,112px);height:clamp(78px,22vmin,112px)}.ps1-touch-controls .touch-stick{width:clamp(82px,23vmin,118px);height:clamp(82px,23vmin,118px)}.ps1-touch-controls .touch-face{width:clamp(36px,9vmin,48px);height:clamp(36px,9vmin,48px);font-size:clamp(17px,5vmin,25px)}}
+.ps1-touch-controls .touch-dpad,.ps1-touch-controls .touch-stick{max-width:min(60vw,60vh);max-height:min(60vw,60vh)}
+@media(orientation:landscape) and (max-height:600px){.ps1-touch-controls .touch-dpad{width:var(--touch-dpad-size,144px);height:var(--touch-dpad-size,144px)}.ps1-touch-controls .touch-stick{width:var(--touch-stick-size,148px);height:var(--touch-stick-size,148px)}}
 @media(pointer:fine){.ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none}}
 
 /* Final overrides: keep options closed in play and use the full mobile viewport. */
@@ -103,3 +109,16 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .game-fullscreen #toggle-fullscreen{left:calc(env(safe-area-inset-left) + 8px);right:auto;top:calc(env(safe-area-inset-top) + 8px);bottom:auto}
 .game-fullscreen #touch-settings-toggle{left:calc(env(safe-area-inset-left) + 54px);right:auto;top:calc(env(safe-area-inset-top) + 8px);bottom:auto;width:34px;min-width:34px;font-size:15px;transform:none}
 .game-fullscreen #touch-settings-toggle::after{content:none}
+.game-fullscreen #emulator-menu-toggle{position:fixed;left:calc(env(safe-area-inset-left) + 98px);right:auto;top:calc(env(safe-area-inset-top) + 8px);bottom:auto;opacity:.58}
+.game-fullscreen #emulator-menu-toggle:focus,.game-fullscreen #emulator-menu-toggle:hover{opacity:1}
+.game-fullscreen .touch-control-settings.panel-moving{right:auto;bottom:auto;width:min(640px,calc(100vw - 16px));max-height:min(80dvh,620px);margin:0;z-index:10005}
+.touch-control-settings.panel-floating{position:fixed;right:auto;bottom:auto;transform:none;width:min(640px,calc(100vw - 16px));max-height:min(82dvh,620px);overflow:auto;margin:0;z-index:10005}
+.touch-control-settings.panel-moving{z-index:10006}
+.touch-control-settings>.touch-panel-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px;margin:0 0 8px;border:1px dashed #7778;background:#1119;touch-action:none}
+.touch-panel-actions>span{flex:1 1 100%;font:8px var(--mono);color:var(--lime)}
+.touch-panel-actions button{min-height:34px;padding:6px 9px;font-size:8px}
+.touch-control-settings.panel-moving .touch-panel-actions{cursor:move}
+#game-screen.ps1-toolbar-closed .ejs_menu_bar{opacity:0!important;pointer-events:none!important;transform:translateY(100%)!important}
+#game-screen.ps1-toolbar-open .ejs_menu_bar{opacity:1!important;pointer-events:auto!important;transform:translateY(0)!important}
+#game-screen.ps1-toolbar-closed .ejs_small_screen .ejs_menu_bar{transform:translate(-50%,100%)!important}
+#game-screen.ps1-toolbar-open .ejs_small_screen .ejs_menu_bar{transform:translate(-50%,0)!important}

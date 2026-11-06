@@ -51,8 +51,10 @@ const PS1_DEFAULT_CONTROLS = {
 };
 const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v2';
 const TOUCH_VISIBILITY_KEY = 'retro-arower-ps1-touch-visibility-v1';
+const TOUCH_PANEL_POSITION_KEY = 'retro-arower-ps1-panel-position-v1';
 const DEFAULT_TOUCH_LAYOUT = {
   mode: 'dpad',
+  sizes: { dpad: 144, stick: 148 },
   controls: {
     dpad: { x: 14, y: 75 }, stick: { x: 14, y: 75 },
     l: { x: 14, y: 16 }, r: { x: 86, y: 16 }, l2: { x: 14, y: 34 }, r2: { x: 86, y: 34 },
@@ -69,7 +71,11 @@ function readTouchLayout() {
       const pos = stored?.controls?.[id];
       if (Number.isFinite(pos?.x) && Number.isFinite(pos?.y)) controls[id] = { x: pos.x, y: pos.y };
     }
-    return { mode: stored?.mode === 'analog' ? 'analog' : 'dpad', controls };
+    const sizes = {
+      dpad: Number.isFinite(stored?.sizes?.dpad) ? Math.max(88, Math.min(220, stored.sizes.dpad)) : 144,
+      stick: Number.isFinite(stored?.sizes?.stick) ? Math.max(88, Math.min(220, stored.sizes.stick)) : 148,
+    };
+    return { mode: stored?.mode === 'analog' ? 'analog' : 'dpad', controls, sizes };
   } catch { return JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)); }
 }
 let touchLayout = readTouchLayout();
@@ -84,6 +90,12 @@ const touchEditButton = document.querySelector('#touch-edit-toggle');
 const touchVisibleButton = document.querySelector('#touch-visible-toggle');
 const touchStatus = document.querySelector('#touch-control-position');
 const touchMode = document.querySelector('#touch-mode');
+const dpadSizeInput = document.querySelector('#touch-dpad-size');
+const stickSizeInput = document.querySelector('#touch-stick-size');
+const emulatorMenuToggle = document.querySelector('#emulator-menu-toggle');
+const touchPanelMove = document.querySelector('#touch-panel-move');
+const touchPanelMinimize = document.querySelector('#touch-panel-minimize');
+const touchPanelActions = document.querySelector('#touch-panel-actions');
 const touchSettings = document.querySelector('#touch-control-settings');
 const touchSettingsToggle = document.querySelector('#touch-settings-toggle');
 ['pointerdown', 'pointerup'].forEach((type) => touchSettingsToggle.addEventListener(type, (event) => event.stopPropagation()));
@@ -99,15 +111,92 @@ touchSettingsToggle.addEventListener('click', (event) => {
     return;
   }
   touchSettings.open = !touchSettings.open;
+  if (touchSettings.open) restoreTouchPanelPosition();
   touchSettingsToggle.setAttribute('aria-expanded', String(touchSettings.open));
   document.body.classList.toggle('game-fullscreen-tools-open', touchSettings.open);
   requestAnimationFrame(resizeEmulatorViewport);
 });
+function restoreTouchPanelPosition() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TOUCH_PANEL_POSITION_KEY));
+    if (saved?.left && saved?.top) {
+      touchSettings.classList.add('panel-floating');
+      touchSettings.style.left = saved.left; touchSettings.style.top = saved.top;
+      requestAnimationFrame(keepTouchPanelOnscreen);
+    }
+  } catch { /* Default panel placement remains available. */ }
+}
+function keepTouchPanelOnscreen() {
+  if (!touchSettings.open || !touchSettings.classList.contains('panel-floating')) return;
+  const rect = touchSettings.getBoundingClientRect();
+  const left = Math.max(8, Math.min(innerWidth - rect.width - 8, rect.left));
+  const top = Math.max(8, Math.min(innerHeight - rect.height - 8, rect.top));
+  touchSettings.style.left = `${left}px`; touchSettings.style.top = `${top}px`;
+}
+window.addEventListener('resize', keepTouchPanelOnscreen);
 touchSettings.addEventListener('toggle', () => {
   if (document.body.classList.contains('game-fullscreen')) document.body.classList.toggle('game-fullscreen-tools-open', touchSettings.open);
   touchSettingsToggle.setAttribute('aria-expanded', String(touchSettings.open));
 });
 touchMode.value = touchLayout.mode;
+dpadSizeInput.value = String(touchLayout.sizes.dpad);
+stickSizeInput.value = String(touchLayout.sizes.stick);
+function updateTouchSizeControls() {
+  document.querySelector('#touch-dpad-size-value').value = `${touchLayout.sizes.dpad} px`;
+  document.querySelector('#touch-stick-size-value').value = `${touchLayout.sizes.stick} px`;
+  placeTouchControls();
+}
+for (const [input, key] of [[dpadSizeInput, 'dpad'], [stickSizeInput, 'stick']]) {
+  input.addEventListener('input', () => {
+    touchLayout.sizes[key] = Number(input.value);
+    updateTouchSizeControls();
+    persistTouchLayout();
+  });
+}
+updateTouchSizeControls();
+emulatorMenuToggle.addEventListener('click', (event) => {
+  event.preventDefault(); event.stopPropagation();
+  const mount = document.querySelector('#game-screen');
+  const visible = mount.classList.toggle('ps1-toolbar-open');
+  mount.classList.toggle('ps1-toolbar-closed', !visible);
+  emulatorMenuToggle.setAttribute('aria-pressed', String(visible));
+  emulatorMenuToggle.setAttribute('aria-label', visible ? 'Ocultar menu do emulador' : 'Mostrar menu do emulador');
+});
+['pointerdown', 'pointerup'].forEach((type) => emulatorMenuToggle.addEventListener(type, (event) => event.stopPropagation()));
+touchPanelMinimize.addEventListener('click', () => { touchSettings.open = false; });
+touchPanelMove.addEventListener('click', () => {
+  const moving = touchSettings.classList.toggle('panel-moving');
+  if (moving) {
+    const rect = touchSettings.getBoundingClientRect();
+    touchSettings.style.left = `${rect.left}px`; touchSettings.style.top = `${rect.top}px`;
+    touchSettings.classList.add('panel-floating');
+  }
+  touchPanelMove.setAttribute('aria-pressed', String(moving));
+  touchPanelMove.textContent = moving ? 'CONCLUIR POSIÇÃO' : 'MOVER PAINEL';
+});
+let panelDrag = null;
+touchPanelActions.addEventListener('pointerdown', (event) => {
+  if (!touchSettings.classList.contains('panel-moving') || event.target.closest('button')) return;
+  event.preventDefault();
+  const rect = touchSettings.getBoundingClientRect();
+  panelDrag = { pointerId: event.pointerId, x: rect.left, y: rect.top, startX: event.clientX, startY: event.clientY };
+  touchPanelActions.setPointerCapture?.(event.pointerId);
+});
+touchPanelActions.addEventListener('pointermove', (event) => {
+  if (!panelDrag || event.pointerId !== panelDrag.pointerId) return;
+  event.preventDefault();
+  const rect = touchSettings.getBoundingClientRect();
+  const left = Math.max(8, Math.min(innerWidth - rect.width - 8, panelDrag.x + event.clientX - panelDrag.startX));
+  const top = Math.max(8, Math.min(innerHeight - rect.height - 8, panelDrag.y + event.clientY - panelDrag.startY));
+  touchSettings.style.left = `${left}px`; touchSettings.style.top = `${top}px`;
+});
+const finishPanelDrag = (event) => {
+  if (!panelDrag || event.pointerId !== panelDrag.pointerId) return;
+  panelDrag = null;
+  try { localStorage.setItem(TOUCH_PANEL_POSITION_KEY, JSON.stringify({ left: touchSettings.style.left, top: touchSettings.style.top })); } catch { /* Keep position for this session. */ }
+};
+touchPanelActions.addEventListener('pointerup', finishPanelDrag);
+touchPanelActions.addEventListener('pointercancel', finishPanelDrag);
 touchMode.addEventListener('change', () => {
   touchLayout.mode = touchMode.value === 'analog' ? 'analog' : 'dpad';
   persistTouchLayout();
@@ -116,6 +205,9 @@ touchMode.addEventListener('change', () => {
 document.querySelector('#touch-reset').addEventListener('click', () => {
   touchLayout = JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT));
   touchMode.value = touchLayout.mode;
+  dpadSizeInput.value = String(touchLayout.sizes.dpad);
+  stickSizeInput.value = String(touchLayout.sizes.stick);
+  updateTouchSizeControls();
   persistTouchLayout();
   renderTouchControlMode();
   placeTouchControls();
@@ -131,7 +223,9 @@ touchEditButton.addEventListener('click', () => {
     persistTouchVisibilityPreference();
     updatePs1TouchVisibility();
   }
-  setTouchEditMode(root, !root.classList.contains('editing'));
+  const editing = !root.classList.contains('editing');
+  setTouchEditMode(root, editing);
+  if (editing) touchSettings.open = false;
 });
 function persistTouchVisibilityPreference() {
   try { localStorage.setItem(TOUCH_VISIBILITY_KEY, touchVisibilityPreference); } catch { /* Keep the setting for this session. */ }
@@ -181,6 +275,8 @@ function renderTouchControlMode() {
 function placeTouchControls() {
   const root = document.querySelector('#ps1-touch-controls');
   if (!root) return;
+  root.style.setProperty('--touch-dpad-size', `${touchLayout.sizes.dpad}px`);
+  root.style.setProperty('--touch-stick-size', `${touchLayout.sizes.stick}px`);
   for (const id of TOUCH_CONTROL_IDS) {
     const element = root.querySelector(`[data-touch-control="${id}"]`);
     if (!element) continue;
@@ -191,6 +287,10 @@ function placeTouchControls() {
 function initializePs1TouchControls() {
   const mount = document.querySelector('#game-screen');
   mount.classList.add('ps1-touch-controls-enabled');
+  mount.classList.add('ps1-toolbar-closed');
+  mount.classList.remove('ps1-toolbar-open');
+  emulatorMenuToggle.setAttribute('aria-pressed', 'false');
+  emulatorMenuToggle.setAttribute('aria-label', 'Mostrar menu do emulador');
   let root = document.querySelector('#ps1-touch-controls');
   if (!root) {
     root = document.createElement('div');
@@ -816,6 +916,9 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   touchSettings.hidden = system.id !== 'ps1';
   touchSettings.open = false;
   touchSettingsToggle.hidden = false;
+  emulatorMenuToggle.hidden = system.id !== 'ps1';
+  document.querySelector('#game-screen').classList.remove('ps1-toolbar-open');
+  document.querySelector('#game-screen').classList.toggle('ps1-toolbar-closed', system.id === 'ps1');
   touchSettingsToggle.setAttribute('aria-expanded', 'false');
   document.body.classList.remove('game-fullscreen-tools-open');
   updatePs1TouchVisibility();
@@ -905,6 +1008,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
         status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`;
       }
       document.querySelector('#game-screen').appendChild(touchSettingsToggle);
+      if (system.id === 'ps1') document.querySelector('#game-screen').appendChild(emulatorMenuToggle);
       touchSettingsToggle.textContent = system.id === 'ps1' ? '⚙' : (document.querySelector('#game-screen').classList.contains('virtual-controls-hidden') ? 'MOSTRAR CONTROLES' : 'OCULTAR CONTROLES');
       startGamepadBridge(system);
       if (gamepadIndexFix) status.textContent += ' · gamepad compatível ativo';

@@ -212,3 +212,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Revisão do código encontrou que as URLs Blob do CUE/faixas eram revogadas imediatamente no callback `EJS_onGameStart`. Mantidas durante a sessão para evitar invalidar uma leitura assíncrona do core; são revogadas ao sair/recarregar a página.
 - Com `?debug=1`, o app agora ativa `EJS_DEBUG_XX` e registra nome/tamanho de cada faixa resolvida, caminho virtual montado e presença/tamanho dos arquivos no VFS, além de erros JS e promises rejeitadas. Nenhum conteúdo de ROM é registrado.
 - Limitação de validação: sem conseguir observar a execução real no dispositivo, a correção do boot ainda precisa ser confirmada com o mesmo CUE/BIN. A nova telemetria deve indicar se a faixa chegou ao VFS e em qual caminho.
+
+## 2026-11-06 — Ajustes de toque PS1
+
+- Barra de ferramentas do EmulatorJS começa oculta no PS1 para evitar abrir ou cobrir opções ao tocar Start/Select junto às bordas; um botão `☰` junto à engrenagem permite mostrá-la ou ocultá-la.
+- Painel PS1 adiciona controles deslizantes independentes para tamanho de D-pad e analógico (88–220 px), com preferências persistidas localmente.
+- Painel de ajustes pode ser minimizado e arrastado; ao entrar em **Arrastar controles**, ele se fecha automaticamente para deixar os botões acessíveis. A posição do painel é salva e limitada à área visível após redimensionar/rotacionar.
+- Cache de CSS/JS renovado para que GitHub Pages e navegadores móveis baixem as mudanças.
+- Validação: sintaxe de `src/app.js` e `git diff --check`; teste tátil e rotação em iPhone ainda dependem de validação no aparelho.

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20261106-ps1-mobile-fix" />
+    <link rel="stylesheet" href="./src/styles.css?v=20261106-ps1-touch-menu-size-panel" />
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -16,7 +16,7 @@
 
       const startApp = () => {
         const appScript = document.createElement('script');
-        appScript.src = './src/app.js?v=20261106-ps1-desktop-cue-fix';
+        appScript.src = './src/app.js?v=20261106-ps1-touch-menu-size-panel';
         appScript.onerror = () => {
           const hint = document.getElementById('start-hint');
           if (hint) hint.textContent = 'Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.';
@@ -112,12 +112,20 @@
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
         <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><button id="toggle-fullscreen" class="secondary-button fullscreen-toggle" type="button" aria-pressed="false" aria-label="Entrar em tela cheia" title="Entrar em tela cheia">TELA CHEIA</button><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
-        <button id="touch-settings-toggle" class="touch-settings-toggle" type="button" aria-expanded="false" aria-controls="touch-control-settings">CONTROLES · AJUSTES</button>
+        <button id="touch-settings-toggle" class="touch-settings-toggle" type="button" aria-expanded="false" aria-controls="touch-control-settings" aria-label="Configurar controles">⚙</button>
+        <button id="emulator-menu-toggle" class="emulator-menu-toggle" type="button" aria-pressed="false" aria-label="Mostrar menu do emulador">☰</button>
         <details class="touch-control-settings" id="touch-control-settings" aria-labelledby="touch-controls-title" hidden>
           <summary><span class="eyebrow">CONTROLES NA TELA · PS1</span><strong id="touch-controls-title">Layout clássico de PlayStation</strong></summary>
+          <div class="touch-panel-actions" id="touch-panel-actions"><span>ARRASTE ESTA BARRA PARA MOVER</span><button class="secondary-button" id="touch-panel-move" type="button" aria-pressed="false">MOVER PAINEL</button><button class="secondary-button" id="touch-panel-minimize" type="button">MINIMIZAR</button></div>
           <div class="touch-control-body">
           <label for="touch-mode">DIRECIONAL
             <select id="touch-mode"><option value="dpad">D-pad</option><option value="analog">Analógico</option></select>
+          </label>
+          <label for="touch-dpad-size">TAMANHO DO D-PAD <output id="touch-dpad-size-value">144 px</output>
+            <input id="touch-dpad-size" type="range" min="88" max="220" step="4" value="144" />
+          </label>
+          <label for="touch-stick-size">TAMANHO DO ANALÓGICO <output id="touch-stick-size-value">148 px</output>
+            <input id="touch-stick-size" type="range" min="88" max="220" step="4" value="148" />
           </label>
           <div class="touch-layout-actions"><button class="secondary-button" id="touch-visible-toggle" type="button">OCULTAR CONTROLES</button><button class="secondary-button" id="touch-edit-toggle" type="button">ARRASTAR CONTROLES</button><button class="secondary-button" id="touch-reset" type="button">RESTAURAR LAYOUT</button></div>
           <p id="touch-control-position" role="status">No computador, os controles de toque ficam ocultos. No celular, aparecem automaticamente; você pode ocultá-los quando quiser.</p>
