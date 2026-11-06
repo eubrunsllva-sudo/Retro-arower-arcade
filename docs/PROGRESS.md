@@ -140,3 +140,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - O diagnóstico mostrou o controle `STANDARD GAMEPAD`, mas isso só comprova detecção pelo navegador. Pesquisa encontrou uma falha reproduzível no polling do EmulatorJS 4.2.3 quando os índices Gamepad não começam em zero. Antes de carregar o motor, o app agora compacta os gamepads conectados e normaliza os índices para o player 1.
 - Adicionado `EJS_defaultControls` explícito para o jogador 1 no PS1, usando os nomes de controle recomendados na documentação do EmulatorJS. Eventual diferença do iPega deve ser remapeada em Configurações → Controles.
 - Verificado: `node --check src/app.js` e `git diff --check`. Ainda não houve teste real de boot de todos os formatos nem de cada botão do iPega no jogo. Referências: FAQ/docs do EmulatorJS e issue RomM #5139 que aponta o bug upstream #1197 e correção no ramo de desenvolvimento; a versão estável aqui permanece 4.2.3.
+
+## 2026-11-06 — Retomada móvel, rotação e falha de inicialização PS1
+
+- Adicionada tentativa de pausar o core ao ocultar a aba e retomá-lo quando ela volta. Após rotação, dispara evento de redimensionamento para o canvas; a página não executa reload por orientação.
+- Limite: iOS/WebKit pode suspender ou encerrar processo de aba. Issue upstream EmulatorJS #904 descreve congelamento após troca de app e está marcada `wontfix`; a retomada automática é melhor esforço, não garantia. Se o sistema matar a aba, o estado WASM em memória se perde. Os saves/cartão do jogo têm intervalo de flush de 30 s.
+- O print mostra a página genérica de falha do navegador, sem erro do PCSX-ReARMed, então não identifica sozinho se foi rede ou encerramento por memória. Adicionado relatório visível para erros WebAssembly/WebGL/memória quando o processo ainda consegue executar JavaScript.
+- Mídias PS1 grandes (>=300 MiB) em iPhone/iPad agora mostram aviso antes de empacotar; CHD pode reduzir pressão de memória. O tamanho é heurístico, sem afirmar que o navegador terá memória suficiente.
+- Verificação estática: `node --check src/app.js`, `git diff --check`. Sem teste físico no iPhone/iPad; não afirmar que o bug de suspensão foi eliminado antes desse teste.

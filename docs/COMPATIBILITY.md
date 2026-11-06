@@ -21,7 +21,7 @@ O autosave SRAM do EmulatorJS escreve no IndexedDB do navegador. A barra do moto
 
 ## BIOS e saves de PS1
 
-O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor pode receber uma BIOS que o usuário já possua; o projeto não inclui nem baixa firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real.
+O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor pode receber uma BIOS que o usuário já possua; o projeto não inclui nem baixa firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real. Em iPhone/iPad, mídias CUE/BIN de 300 MiB ou mais exibem aviso de risco de memória (limite heurístico, não um limite garantido); CHD pode reduzir o tamanho da entrada.
 
 ## Classificação futura
 
@@ -30,6 +30,10 @@ O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem
 - **Não disponível:** núcleo ou recurso não funciona nesse ambiente.
 
 Não publicar alegações como “funciona em qualquer iPhone” sem testar as versões do iOS/Safari e o modo de acesso usado.
+
+## Suspensão e rotação no iOS
+
+O app pausa o core quando a página fica oculta, tenta retomá-lo ao voltar e dispara redimensionamento após rotação. Isso é apenas melhor esforço: o WebKit pode congelar ou encerrar a aba para economizar recursos e o EmulatorJS tem um problema aberto de retomada em dispositivos Apple. Em caso de encerramento do processo, nenhum JavaScript consegue manter a emulação ativa em segundo plano nem recuperar o estado de execução que só estava na memória. Saves do jogo/cartão de memória permanecem dependentes do autosave do core; retomar exatamente o mesmo quadro após a aba ser encerrada não é garantido.
 
 ## Gamepad e iOS
 

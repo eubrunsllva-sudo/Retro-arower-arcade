@@ -223,14 +223,23 @@ async function prepareRawBinCandidates(bins, allFiles, sequence) {
 }
 
 async function prepareDiscCandidate(candidate, sequence) {
-  ps1DiscStatus.textContent = `Preparando ${candidate.title} localmente…`;
+  const totalSize = candidate.files.reduce((total, entry) => total + entry.file.size, 0);
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const mobileMemoryWarning = isAppleMobile && totalSize >= 300 * 1024 * 1024
+    ? `Mídia PS1 grande (${formatBytes(totalSize)}). O iOS pode encerrar a aba por limite de memória; CHD costuma reduzir a pressão de memória.`
+    : '';
+  ps1DiscStatus.textContent = mobileMemoryWarning || `Preparando ${candidate.title} localmente…`;
   document.querySelector('#start-game').disabled = true;
   try {
     const archive = await createZipFile(candidate.files, candidate.title);
     if (sequence !== selectionSequence) return;
     ps1DiscChooser.hidden = true;
     await prepareGame(archive, systems.find((system) => system.id === 'ps1'), candidate.title, sequence);
-    ps1DiscStatus.textContent = 'Conjunto de disco preparado localmente.';
+    ps1DiscStatus.textContent = mobileMemoryWarning || 'Conjunto de disco preparado localmente.';
+    if (mobileMemoryWarning && pendingGame) {
+      document.querySelector('#selected-meta').textContent += ` · ${mobileMemoryWarning}`;
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'falha ao preparar o conjunto';
     ps1DiscStatus.textContent = message;
@@ -477,7 +486,10 @@ async function startGame(file, system, title = file.name) {
       loadSavFiles: true,
     },
     EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
-    EJS_onGameStart: () => { status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`; },
+    EJS_onGameStart: () => {
+      status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`;
+      requestAnimationFrame(resizeEmulatorViewport);
+    },
   });
 
   const script = document.createElement('script');
@@ -570,6 +582,46 @@ fullscreenButton.addEventListener('click', () => {
     void enterGameFullscreen();
   }
 });
+
+function resizeEmulatorViewport() {
+  if (!running) return;
+  // EmulatorJS listens to resize; orientation changes should resize the canvas,
+  // never reload the page or discard the selected local File.
+  window.dispatchEvent(new Event('resize'));
+}
+
+function handleEmulatorVisibility() {
+  if (!running) return;
+  const emulator = window.EJS_emulator;
+  if (document.hidden) {
+    document.querySelector('#player-status').textContent = 'Jogo pausado enquanto esta aba está em segundo plano. Retorne à página para continuar.';
+    // EmulatorJS exposes pause/play on the running instance. iOS may still
+    // suspend or kill a WebAssembly tab; this is best-effort lifecycle handling.
+    try { emulator?.pause?.(true); } catch { /* The browser may already have suspended the core. */ }
+    return;
+  }
+  try { emulator?.play?.(true); } catch { /* Some iOS WebKit sessions cannot resume the core. */ }
+  requestAnimationFrame(() => requestAnimationFrame(resizeEmulatorViewport));
+  window.setTimeout(() => {
+    if (running) document.querySelector('#player-status').textContent = 'Jogo retomado. Se a imagem não voltar, o iOS suspendeu a sessão; recarregue e inicie novamente.';
+  }, 250);
+}
+
+function reportRuntimeFailure(message) {
+  if (!running || !/out of memory|allocation failed|memory access out of bounds|webassembly|webgl|context lost|abort/i.test(message)) return;
+  document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 180)}. Em iPhone/iPad, arquivos PS1 grandes podem exceder a memória disponível.`;
+}
+
+window.addEventListener('error', (event) => reportRuntimeFailure(event.message || 'erro de execução'));
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  reportRuntimeFailure(reason instanceof Error ? reason.message : String(reason || 'falha assíncrona'));
+});
+
+document.addEventListener('visibilitychange', handleEmulatorVisibility);
+window.addEventListener('pageshow', handleEmulatorVisibility);
+window.addEventListener('orientationchange', () => window.setTimeout(resizeEmulatorViewport, 250));
+window.visualViewport?.addEventListener('resize', () => window.requestAnimationFrame(resizeEmulatorViewport));
 
 async function enterGameFullscreen() {
   document.body.classList.add('game-fullscreen');
