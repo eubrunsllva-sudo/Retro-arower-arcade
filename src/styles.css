@@ -7,6 +7,41 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 @media(max-width:760px){.topbar{height:62px;padding:0 18px}.topbar-right{font-size:8px;gap:7px}.topbar-right .icon-button{margin-left:3px}main{padding:0 18px}.hero{grid-template-columns:1fr;min-height:0}.hero-copy{padding:53px 0 7px}.hero-art{height:270px;grid-row:1}.orbit{width:235px;height:235px}.orbit-two{width:180px;height:180px}.cart{width:140px;height:165px}.cart-label{width:105px;height:99px;padding-top:23px;font-size:10px}.cart-teeth{left:20px;width:6px;height:11px;box-shadow:13px 0 #555348,26px 0 #555348,39px 0 #555348,52px 0 #555348,65px 0 #555348,78px 0 #555348,91px 0 #555348}.cart-back{transform:translate(39px,-15px) rotate(14deg)}.cart-front{transform:translate(-20px,12px) rotate(-12deg)}.art-caption{right:0;bottom:6px}h1{font-size:61px;letter-spacing:-4px;margin-top:18px}.hero-copy>p:not(.microcopy){font-size:14px}.section-heading{align-items:start;flex-direction:column;gap:11px}h2{font-size:29px}.console-grid{grid-template-columns:repeat(2,1fr);gap:9px}.console-card{height:161px;padding:12px}.card-bottom{left:12px;right:12px;bottom:11px}.card-bottom h3{font-size:12px}.console-glyph{height:67px}.section-note{line-height:1.5}.library-section{padding:43px 0}.save-strip{align-items:flex-start;padding:15px;gap:11px;margin-bottom:40px}.save-strip p{line-height:1.5}.coming-soon{display:none}footer{height:auto;min-height:62px;padding:14px 18px;gap:16px;font-size:8px}footer a{text-align:right}.selected-tag{display:none}}
 @media(max-width:760px){.hero-actions{display:grid;grid-template-columns:1fr;width:100%;max-width:380px}.hero-actions .primary-button{width:100%;min-width:0}.hero-actions .reload-button{width:100%;height:42px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+/* Compact per-session controls and immersive play surface. */
+.player-section{position:relative}
+.touch-control-settings[hidden]{display:none!important}
+.touch-control-settings{display:block;max-width:640px;margin:10px 0 20px;padding:0}
+.touch-control-settings summary{display:flex;align-items:center;gap:12px;min-height:42px;padding:8px 12px;cursor:pointer;list-style:none}
+.touch-control-settings summary::-webkit-details-marker{display:none}
+.touch-control-settings summary strong{font-size:11px;font-weight:500}
+.touch-control-body{display:grid;gap:11px;padding:0 14px 14px}
+.touch-settings-toggle{position:absolute;z-index:20;right:8px;top:8px;min-height:30px;padding:0 10px;border:1px solid #ffffff70;border-radius:16px;background:#111c;color:var(--lime);font:8px var(--mono);cursor:pointer;touch-action:manipulation}
+.touch-settings-toggle[hidden]{display:none!important}
+#game-screen.virtual-controls-hidden .ejs_virtualGamepad_parent{display:none!important}
+#game-screen.ps1-touch-controls-enabled .ejs_virtualGamepad_parent{display:none!important}
+.ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none!important}
+.ps1-touch-controls [data-touch-control]{z-index:6}
+.ps1-touch-controls .touch-face,.ps1-touch-controls .touch-shoulder,.ps1-touch-controls .touch-system{position:absolute}
+.game-fullscreen .player-section{position:fixed;inset:0;gap:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
+.game-fullscreen .player-heading,.game-fullscreen .player-footnote{display:none!important}
+.game-fullscreen .game-screen{flex:1 1 100%;width:100%;height:100%;min-height:0;max-height:none;margin:0;aspect-ratio:auto}
+.game-fullscreen .touch-settings-toggle{position:fixed;top:auto;right:calc(env(safe-area-inset-right) + 8px);bottom:calc(env(safe-area-inset-bottom) + 8px);min-width:34px;min-height:30px;opacity:.38}
+.game-fullscreen .touch-settings-toggle:focus,.game-fullscreen .touch-settings-toggle:hover{opacity:1}
+.game-fullscreen .touch-control-settings{display:none}
+.game-fullscreen.game-fullscreen-tools-open .touch-control-settings{display:block;position:fixed;z-index:10002;left:env(safe-area-inset-left);right:env(safe-area-inset-right);bottom:calc(env(safe-area-inset-bottom) + 44px);max-height:min(48dvh,360px);overflow:auto;margin:0;background:#111e;border:1px solid #7778;backdrop-filter:blur(10px)}
+.game-fullscreen.game-fullscreen-tools-open .touch-control-settings[open]{display:block}
+.game-fullscreen .touch-control-settings summary{color:var(--text)}
+@media(max-width:760px){.game-fullscreen .game-screen{min-height:0;aspect-ratio:auto}.touch-settings-toggle{right:8px;top:8px}}
+.game-fullscreen #toggle-fullscreen{position:fixed;z-index:10003;top:calc(env(safe-area-inset-top) + 8px);left:calc(env(safe-area-inset-left) + 8px);min-width:34px;min-height:30px;padding:0 8px;background:#111c;font-size:8px;opacity:.45}
+.game-fullscreen #toggle-fullscreen:hover,.game-fullscreen #toggle-fullscreen:focus{opacity:1}
+.game-fullscreen #touch-settings-toggle{font-size:0;width:34px;min-width:34px}
+.game-fullscreen #touch-settings-toggle::after{content:'⋯';font:18px/1 var(--sans)}
+.touch-control-settings[hidden]{display:none!important}
+.game-fullscreen .player-section{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
+.game-fullscreen .player-heading,.game-fullscreen .player-footnote{display:none!important}
+.game-fullscreen .game-screen{flex:1 1 100%;width:100%;height:100%;min-height:0;max-height:none;margin:0;aspect-ratio:auto}
+.game-fullscreen.game-fullscreen-tools-open .touch-control-settings{display:block;position:fixed;z-index:10002;left:env(safe-area-inset-left);right:env(safe-area-inset-right);bottom:calc(env(safe-area-inset-bottom) + 44px);max-height:min(48dvh,360px);overflow:auto;margin:0;background:#111e;border:1px solid #7778;backdrop-filter:blur(10px)}
 .gamepad-check{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:490px;border:1px solid var(--line);background:#171715;padding:14px;margin-top:18px}.gamepad-check>div{display:flex;flex-direction:column;gap:5px;min-width:0}.gamepad-check strong{font-size:12px;font-weight:500}.gamepad-check #gamepad-status{font:9px/1.5 var(--mono);color:var(--lime);overflow-wrap:anywhere}.gamepad-check button{flex:0 0 auto}@media(max-width:760px){.gamepad-check{align-items:stretch;flex-direction:column}.gamepad-check button{min-height:42px}}
 .player-actions .fullscreen-toggle{color:var(--lime);border-color:#62694b}.game-fullscreen .player-section{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;width:100%;height:100%;height:100dvh;max-height:100dvh;margin:0;padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 8px);overflow:auto;border:0;background:#050505}.game-fullscreen .player-heading{flex:0 0 auto;gap:8px}.game-fullscreen .player-heading>div:first-child{min-width:0}.game-fullscreen .player-heading strong{max-width:35vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.game-fullscreen .player-actions{flex-wrap:wrap;justify-content:flex-end}.game-fullscreen .game-screen{flex:1 1 auto;width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:auto}.game-fullscreen .game-screen canvas,.game-fullscreen .game-screen iframe{max-width:100%;max-height:100%;object-fit:contain}.game-fullscreen .player-footnote{flex:0 0 auto;margin:5px 0 0;font-size:8px;max-height:8vh;overflow:auto}@media(max-width:760px){.game-fullscreen .player-section{padding:calc(env(safe-area-inset-top) + 5px) calc(env(safe-area-inset-right) + 5px) calc(env(safe-area-inset-bottom) + 5px) calc(env(safe-area-inset-left) + 5px)}.game-fullscreen .player-heading{align-items:flex-start}.game-fullscreen .player-heading>div:first-child{max-width:34vw}.game-fullscreen .player-heading .eyebrow{font-size:7px}.game-fullscreen .player-heading strong{font-size:10px;max-width:34vw}.game-fullscreen .player-heading #player-status{font-size:7px}.game-fullscreen .player-actions{max-width:62vw;gap:4px}.game-fullscreen .player-actions .secondary-button{padding:7px 6px;font-size:7px}.game-fullscreen .player-footnote{max-height:7vh}}
 .ps1-firmware{max-width:490px;border:1px solid #51495b;background:#19171b;padding:14px;margin:0 0 14px}.ps1-firmware[hidden]{display:none}.ps1-firmware>div{display:flex;flex-direction:column;gap:6px}.ps1-firmware strong{font-weight:400;font-size:11px;line-height:1.5;color:#d2cbd8}.ps1-firmware label{display:inline-flex;margin-top:12px;cursor:pointer}.ps1-firmware p{font:9px/1.5 var(--mono);color:#89848d;margin:10px 0 0}
@@ -56,3 +91,10 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .ps1-touch-controls.editing::after{content:'ARRASTE OS CONTROLES';position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:6px 9px;background:#111d;color:var(--lime);font:9px var(--mono);pointer-events:none}
 @media(orientation:landscape) and (max-height:600px){.ps1-touch-controls .touch-dpad{width:clamp(78px,22vmin,112px);height:clamp(78px,22vmin,112px)}.ps1-touch-controls .touch-stick{width:clamp(82px,23vmin,118px);height:clamp(82px,23vmin,118px)}.ps1-touch-controls .touch-face{width:clamp(36px,9vmin,48px);height:clamp(36px,9vmin,48px);font-size:clamp(17px,5vmin,25px)}}
 @media(pointer:fine){.ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none}}
+
+/* Final overrides: keep options closed in play and use the full mobile viewport. */
+.touch-control-settings[hidden]{display:none!important}
+.game-fullscreen .player-section{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
+.game-fullscreen .player-heading,.game-fullscreen .player-footnote{display:none!important}
+.game-fullscreen .game-screen{flex:1 1 100%;width:100%;height:100%;min-height:0;max-height:none;margin:0;aspect-ratio:auto}
+.game-fullscreen.game-fullscreen-tools-open .touch-control-settings{display:block;position:fixed;z-index:10002;left:env(safe-area-inset-left);right:env(safe-area-inset-right);bottom:calc(env(safe-area-inset-bottom) + 44px);max-height:min(48dvh,360px);overflow:auto;margin:0;background:#111e;border:1px solid #7778;backdrop-filter:blur(10px)}

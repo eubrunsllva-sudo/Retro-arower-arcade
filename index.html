@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20261106-touch-hide" />
+    <link rel="stylesheet" href="./src/styles.css?v=20261106-immersive-controls" />
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -14,7 +14,7 @@
         if (hint) hint.textContent = `Falha ao iniciar o JavaScript: ${event.message || 'consulte o console do navegador'}`;
       });
     </script>
-    <script defer src="./src/app.js?v=20261106-controls-hidden" onerror="document.getElementById('start-hint').textContent='Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.'"></script>
+    <script defer src="./src/app.js?v=20261106-immersive-controls" onerror="document.getElementById('start-hint').textContent='Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.'"></script>
   </head>
   <body>
     <noscript><p class="notice">Ative o JavaScript para carregar a seleção de ROM e o emulador.</p></noscript>
@@ -79,14 +79,17 @@
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
         <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><button id="toggle-fullscreen" class="secondary-button fullscreen-toggle" type="button" aria-pressed="false">TELA CHEIA</button><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
-        <section class="touch-control-settings" aria-labelledby="touch-controls-title">
-          <div><span class="eyebrow">CONTROLES NA TELA · PS1</span><strong id="touch-controls-title">Layout clássico de PlayStation</strong></div>
+        <button id="touch-settings-toggle" class="touch-settings-toggle" type="button" aria-expanded="false" aria-controls="touch-control-settings">CONTROLES · AJUSTES</button>
+        <details class="touch-control-settings" id="touch-control-settings" aria-labelledby="touch-controls-title" hidden>
+          <summary><span class="eyebrow">CONTROLES NA TELA · PS1</span><strong id="touch-controls-title">Layout clássico de PlayStation</strong></summary>
+          <div class="touch-control-body">
           <label for="touch-mode">DIRECIONAL
             <select id="touch-mode"><option value="dpad">D-pad</option><option value="analog">Analógico</option></select>
           </label>
           <div class="touch-layout-actions"><button class="secondary-button" id="touch-visible-toggle" type="button">OCULTAR CONTROLES</button><button class="secondary-button" id="touch-edit-toggle" type="button">ARRASTAR CONTROLES</button><button class="secondary-button" id="touch-reset" type="button">RESTAURAR LAYOUT</button></div>
           <p id="touch-control-position" role="status">No computador, os controles de toque ficam ocultos. No celular, aparecem automaticamente; você pode ocultá-los quando quiser.</p>
-        </section>
+          </div>
+        </details>
         <p class="player-footnote">Controles detectados pelo navegador aparecem no diagnóstico acima. O layout padrão de gamepad agora é encaminhado automaticamente ao jogador 1; se algum botão estiver trocado, abra Configurações → Controles no emulador e remapeie “Port 1 Controls”. Se o iPega não aparecer no diagnóstico, remova o pareamento e conecte em modo Gamepad/HID (evite o modo que simula teclado); depois toque em “Verificar controle”. Em celulares, Bluetooth e Gamepad API dependem do navegador, sistema e modo do controle. No PS1, os controles de toque próprios aparecem sobre o jogo; em outros cores, o controle virtual do EmulatorJS fica na barra. Recarregar a página encerra esta sessão; o último autosave pode ter até 30 segundos.</p>
       </section>
 

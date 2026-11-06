@@ -29,6 +29,7 @@ let activeExternalUrls = [];
 let activeGameUrl = '';
 let gamepadBridgeFrame = 0;
 let gamepadBridgeInputs = new Map();
+let activeSystemId = '';
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
@@ -79,6 +80,29 @@ const touchEditButton = document.querySelector('#touch-edit-toggle');
 const touchVisibleButton = document.querySelector('#touch-visible-toggle');
 const touchStatus = document.querySelector('#touch-control-position');
 const touchMode = document.querySelector('#touch-mode');
+const touchSettings = document.querySelector('#touch-control-settings');
+const touchSettingsToggle = document.querySelector('#touch-settings-toggle');
+['pointerdown', 'pointerup'].forEach((type) => touchSettingsToggle.addEventListener(type, (event) => event.stopPropagation()));
+touchSettingsToggle.addEventListener('click', (event) => {
+  event.stopPropagation();
+  if (activeSystemId !== 'ps1') {
+    const mount = document.querySelector('#game-screen');
+    const visible = mount.classList.contains('virtual-controls-hidden');
+    touchVisibilityPreference = visible ? 'show' : 'hide';
+    persistTouchVisibilityPreference();
+    updatePs1TouchVisibility();
+    touchSettingsToggle.textContent = visible ? 'OCULTAR CONTROLES' : 'MOSTRAR CONTROLES';
+    return;
+  }
+  touchSettings.open = !touchSettings.open;
+  touchSettingsToggle.setAttribute('aria-expanded', String(touchSettings.open));
+  document.body.classList.toggle('game-fullscreen-tools-open', touchSettings.open);
+  requestAnimationFrame(resizeEmulatorViewport);
+});
+touchSettings.addEventListener('toggle', () => {
+  if (document.body.classList.contains('game-fullscreen')) document.body.classList.toggle('game-fullscreen-tools-open', touchSettings.open);
+  touchSettingsToggle.setAttribute('aria-expanded', String(touchSettings.open));
+});
 touchMode.value = touchLayout.mode;
 touchMode.addEventListener('change', () => {
   touchLayout.mode = touchMode.value === 'analog' ? 'analog' : 'dpad';
@@ -110,15 +134,19 @@ function persistTouchVisibilityPreference() {
 }
 function updatePs1TouchVisibility(gamepadConnected = gamepadConnectedForTouch) {
   gamepadConnectedForTouch = Boolean(gamepadConnected);
+  const mount = document.querySelector('#game-screen');
   const root = document.querySelector('#ps1-touch-controls');
-  if (!root) return;
   const touchDevice = matchMedia('(pointer: coarse)').matches || window.innerWidth <= 760;
   const visible = !gamepadConnectedForTouch && (touchVisibilityPreference === 'show' || (touchVisibilityPreference === 'auto' && touchDevice));
-  root.classList.toggle('controls-hidden', !visible);
+  mount.classList.toggle('virtual-controls-hidden', !visible || activeSystemId === 'ps1');
+  root?.classList.toggle('controls-hidden', !visible);
   const label = visible ? 'OCULTAR CONTROLES' : 'MOSTRAR CONTROLES';
   touchVisibleButton.textContent = label;
-  const floatingButton = root.querySelector('.touch-visibility-float');
-  if (floatingButton) floatingButton.textContent = visible ? 'OCULTAR' : 'MOSTRAR';
+  if (activeSystemId && activeSystemId !== 'ps1') touchSettingsToggle.textContent = label;
+  if (root) {
+    const floatingButton = root.querySelector('.touch-visibility-float');
+    if (floatingButton) floatingButton.textContent = visible ? 'OCULTAR' : 'MOSTRAR';
+  }
   if (gamepadConnectedForTouch) touchStatus.textContent = 'Gamepad detectado: controles de toque ocultos automaticamente.';
   else if (touchVisibilityPreference === 'auto' && !touchDevice) touchStatus.textContent = 'Controles ocultos no computador. Em telas sensíveis ao toque, aparecem automaticamente; você também pode alternar quando quiser.';
   else touchStatus.textContent = visible ? 'Controles de toque visíveis. Use “Ocultar controles” para liberar a tela.' : 'Controles de toque ocultos. Use “Mostrar controles” para jogar na tela.';
@@ -171,10 +199,11 @@ function initializePs1TouchControls() {
       <button class="touch-face" data-touch-control="x" type="button">□</button><button class="touch-face" data-touch-control="y" type="button">△</button><button class="touch-face" data-touch-control="b" type="button">○</button><button class="touch-face" data-touch-control="a" type="button">×</button>
       <button class="touch-system" data-touch-control="select" type="button">SELECT</button><button class="touch-system" data-touch-control="start" type="button">START</button>`;
     mount.appendChild(root);
-    root.addEventListener('pointerdown', (event) => handleTouchControlDown(event));
+    root.addEventListener('pointerdown', (event) => handleTouchControlDown(event), true);
     root.addEventListener('pointermove', (event) => handleTouchControlMove(event));
     root.addEventListener('pointerup', (event) => handleTouchControlUp(event));
     root.addEventListener('pointercancel', (event) => handleTouchControlUp(event));
+    root.addEventListener('click', (event) => event.stopPropagation());
     root.querySelector('.touch-edit-float').addEventListener('click', () => setTouchEditMode(root, !root.classList.contains('editing')));
     root.querySelector('.touch-visibility-float').addEventListener('click', () => {
       touchVisibilityPreference = root.classList.contains('controls-hidden') ? 'show' : 'hide';
@@ -204,7 +233,7 @@ function startGamepadBridge(system) {
     if (!running) { releaseGamepadBridgeInputs(); return; }
     const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
     const pad = pads.find((candidate) => candidate?.connected);
-    if (system.id === 'ps1' && Boolean(pad) !== gamepadConnectedForTouch) updatePs1TouchVisibility(Boolean(pad));
+    if (Boolean(pad) !== gamepadConnectedForTouch) updatePs1TouchVisibility(Boolean(pad));
     if (document.hidden || !pad) {
       releaseGamepadBridgeInputs();
       if (connectedBefore && !pad) document.querySelector('#player-status').textContent += ' · gamepad desconectado';
@@ -272,6 +301,7 @@ function releaseTouchControl(id) {
   if (stick) stick.style.transform = '';
 }
 function handleTouchControlDown(event) {
+  event.stopPropagation();
   const control = event.target.closest('[data-touch-control]');
   if (!control || control.hidden) return;
   event.preventDefault();
@@ -769,6 +799,13 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   gamepadBridgeFrame = 0;
   releaseGamepadBridgeInputs();
   player.hidden = false;
+  activeSystemId = system.id;
+  touchSettings.hidden = system.id !== 'ps1';
+  touchSettings.open = false;
+  touchSettingsToggle.hidden = false;
+  touchSettingsToggle.setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('game-fullscreen-tools-open');
+  updatePs1TouchVisibility();
   player.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.querySelector('#player-title').textContent = title;
   const status = document.querySelector('#player-status');
@@ -832,6 +869,8 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       } else {
         status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`;
       }
+      document.querySelector('#game-screen').appendChild(touchSettingsToggle);
+      touchSettingsToggle.textContent = system.id === 'ps1' ? '⚙' : (document.querySelector('#game-screen').classList.contains('virtual-controls-hidden') ? 'MOSTRAR CONTROLES' : 'OCULTAR CONTROLES');
       startGamepadBridge(system);
       if (gamepadIndexFix) status.textContent += ' · gamepad compatível ativo';
       requestAnimationFrame(resizeEmulatorViewport);
@@ -939,6 +978,7 @@ fullscreenButton.addEventListener('click', () => {
     void enterGameFullscreen();
   }
 });
+['pointerdown', 'pointerup'].forEach((type) => fullscreenButton.addEventListener(type, (event) => event.stopPropagation()));
 
 function resizeEmulatorViewport() {
   if (!running) return;
@@ -977,11 +1017,12 @@ window.addEventListener('unhandledrejection', (event) => {
 
 document.addEventListener('visibilitychange', handleEmulatorVisibility);
 window.addEventListener('pageshow', handleEmulatorVisibility);
-window.addEventListener('orientationchange', () => window.setTimeout(resizeEmulatorViewport, 250));
+window.addEventListener('orientationchange', () => window.setTimeout(() => { updatePs1TouchVisibility(); resizeEmulatorViewport(); }, 250));
 window.visualViewport?.addEventListener('resize', () => window.requestAnimationFrame(resizeEmulatorViewport));
 window.addEventListener('resize', () => updatePs1TouchVisibility());
 
 async function enterGameFullscreen() {
+  document.querySelector('#game-screen').appendChild(fullscreenButton);
   document.body.classList.add('game-fullscreen');
   fullscreenButton.textContent = 'SAIR DA TELA CHEIA';
   fullscreenButton.setAttribute('aria-pressed', 'true');
@@ -995,6 +1036,8 @@ async function exitGameFullscreen() {
     try { await document.exitFullscreen(); } catch { /* The visible exit button still clears the CSS mode. */ }
   }
   document.body.classList.remove('game-fullscreen');
+  document.querySelector('.player-actions').prepend(fullscreenButton);
+  document.body.classList.remove('game-fullscreen-tools-open');
   fullscreenButton.textContent = 'TELA CHEIA';
   fullscreenButton.setAttribute('aria-pressed', 'false');
 }
@@ -1002,6 +1045,8 @@ async function exitGameFullscreen() {
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && document.body.classList.contains('game-fullscreen')) {
     document.body.classList.remove('game-fullscreen');
+    document.querySelector('.player-actions').prepend(fullscreenButton);
+    document.body.classList.remove('game-fullscreen-tools-open');
     fullscreenButton.textContent = 'TELA CHEIA';
     fullscreenButton.setAttribute('aria-pressed', 'false');
   }

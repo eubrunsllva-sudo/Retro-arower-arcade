@@ -54,11 +54,11 @@ A página inclui um diagnóstico pela Gamepad API. Conecte o controle antes ou d
 
 ### Tela cheia no celular
 
-Na sessão do jogo, toque em **Tela cheia**. Em iPhone, o navegador pode não oferecer a API de tela cheia para elementos comuns da página; o site usa um modo expandido próprio que ocupa o viewport disponível e mantém **Sair da tela cheia** visível. As barras do Safari podem continuar aparecendo. Gire o aparelho manualmente para paisagem quando preferir; o site não força orientação.
+Na sessão do jogo, toque em **Tela cheia**. No modo expandido, cabeçalho, painel e texto auxiliar ficam ocultos para priorizar o jogo; o botão discreto `⋯` abre opções e o botão de saída permanece no canto superior. Em iPhone, o navegador pode manter suas barras próprias. A área do jogo é recalculada ao girar; o site não força orientação.
 
 ## PS1 — controles virtuais e menu do core
 
-A tela usa D-pad ou analógico (escolha exclusiva), com posições que podem ser movidas por arrasto e ficam salvas no navegador. As configurações do EmulatorJS continuam acessíveis pelo botão `settings` na barra. O projeto não inclui BIOS. O boot e a proporção final precisam de teste físico em iPhone/iPad; se o menu do RetroArch aparecer, o estado sob o título informa se o arquivo aparece no sistema de arquivos interno do core. Isso não confirma que o core aceitou ou iniciou a imagem.
+A tela usa D-pad ou analógico (escolha exclusiva), com posições que podem ser movidas por arrasto e ficam salvas no navegador. A aba **CONTROLES · AJUSTES** abre as configurações PS1; em GBC/GBA alterna a visibilidade do controle virtual do EmulatorJS. Por padrão, controles virtuais aparecem em dispositivos de toque e ficam ocultos em computadores ou quando há gamepad detectado. No PS1, toques nos botões próprios são isolados do frontend do core para que não abram seu menu por engano. O projeto não inclui BIOS. O boot e a proporção final precisam de teste físico em iPhone/iPad; se o menu do RetroArch aparecer, o estado sob o título informa se o arquivo aparece no sistema de arquivos interno do core. Isso não confirma que o core aceitou ou iniciou a imagem.
 
 ### PS1 — controle de toque e CUE/BIN
 
