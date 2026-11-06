@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#11110f" />
+    <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
+    <title>RETRO / browser arcade</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Retro browser arcade, início"><span class="brand-mark">R</span><span>retro<span class="brand-slash">/</span>browser</span></a>
+      <div class="topbar-right"><span class="status-dot"></span><span>SEUS JOGOS, NO SEU APARELHO</span><button class="icon-button" aria-label="Abrir informações" id="about-button">?</button></div>
+    </header>
+
+    <main id="inicio">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span>ARCADE PESSOAL · EM DESENVOLVIMENTO</div>
+          <h1>O seu próximo<br /><span>continue?</span></h1>
+          <p>Uma casa para seus clássicos. Escolha um jogo do seu dispositivo e jogue direto pelo navegador.</p>
+          <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER UM JOGO <span class="button-arrow">↗</span></label>
+          <input id="game-file" type="file" hidden accept=".gb,.gbc,.gba,.n64,.z64,.v64,.iso,.bin,.cue,.pbp,.chd,.cso,.zip" />
+          <p class="microcopy">O arquivo é aberto localmente. Nada é enviado nesta versão.</p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <div class="cart cart-back"><div class="cart-label">SAVE<br />POINT</div><div class="cart-teeth"></div></div>
+          <div class="cart cart-front"><div class="cart-label">PRESS<br /><b>START</b></div><div class="cart-teeth"></div></div>
+          <div class="pixel pixel-a"></div><div class="pixel pixel-b"></div><div class="pixel pixel-c"></div>
+          <span class="art-caption">INSERT YOUR<br />OWN ADVENTURE</span>
+        </div>
+      </section>
+
+      <section class="library-section">
+        <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Seis mundos. <span>Uma tela.</span></h2></div><span class="section-note">A compatibilidade será validada console a console.</span></div>
+        <div class="console-grid" id="console-grid" aria-label="Consoles planejados"></div>
+      </section>
+
+      <section class="selected-game" id="selected-game" hidden aria-live="polite">
+        <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">ARQUIVO SELECIONADO</span><strong id="selected-name"></strong><span id="selected-meta"></span></div><span class="selected-tag" id="selected-system"></span>
+      </section>
+
+      <section class="notice" id="notice" hidden role="status"></section>
+
+      <section class="save-strip">
+        <div class="save-icon">↻</div><div><strong>Seu progresso merece um checkpoint.</strong><p>Salvamento local automático e exportação manual estão no plano. Nuvem será opcional e configurável.</p></div><span class="coming-soon">EM PLANEJAMENTO</span>
+      </section>
+    </main>
+
+    <footer><span>RETRO / BROWSER ARCADE <span class="footer-muted">· PROJETO ABERTO</span></span><a href="./docs/PROGRESS.md">ACOMPANHE O PROGRESSO ↗</a></footer>
+    <dialog id="about-dialog"><button class="dialog-close" id="close-dialog" aria-label="Fechar">×</button><div class="eyebrow">SOBRE O PROJETO</div><h2>Feito para jogar.<br /><span>Com transparência.</span></h2><p>Esta primeira etapa prepara a interface e a seleção de jogos. Os motores de emulação serão adicionados e testados em etapas. A lista de consoles não significa que todos já estejam funcionando.</p><p>O navegador só acessa arquivos que você escolher. Esta versão não envia ROMs, BIOS ou dados para servidores.</p><a href="./docs/DECISIONS.md">Ler decisões técnicas ↗</a></dialog>
+  </body>
+</html>
