@@ -451,6 +451,7 @@ async function startGame(file, system, title = file.name) {
   // for disc-based cores that infer the image format from its extension.
   const gameUrl = system.id === 'ps1' ? file : URL.createObjectURL(file);
   running = true;
+  const gamepadIndexFix = system.id === 'ps1' ? installGamepadIndexCompatibility() : false;
 
   Object.assign(window, {
     EJS_player: '#game-screen',
@@ -476,7 +477,7 @@ async function startGame(file, system, title = file.name) {
       loadSavFiles: true,
     },
     EJS_ready: () => { status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`; },
-    EJS_onGameStart: () => { status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`; },
+    EJS_onGameStart: () => { status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`; },
   });
 
   const script = document.createElement('script');
@@ -527,6 +528,35 @@ function formatBytes(bytes) {
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit += 1; }
   return `${value.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+}
+
+function installGamepadIndexCompatibility() {
+  if (!navigator.getGamepads || navigator.__retroBrowserGamepadFix) return false;
+  const nativeGetGamepads = navigator.getGamepads.bind(navigator);
+  const normalizeIndex = (gamepad, index) => new Proxy(gamepad, {
+    get(target, property) {
+      if (property === 'index') return index;
+      const value = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  try {
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true,
+      value() {
+        const active = Array.from(nativeGetGamepads()).filter((pad) => pad?.connected);
+        const normalized = [null, null, null, null];
+        active.slice(0, normalized.length).forEach((pad, index) => {
+          normalized[index] = pad.index === index ? pad : normalizeIndex(pad, index);
+        });
+        return normalized;
+      },
+    });
+    Object.defineProperty(navigator, '__retroBrowserGamepadFix', { value: true, configurable: false });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const reloadPage = () => window.location.reload();

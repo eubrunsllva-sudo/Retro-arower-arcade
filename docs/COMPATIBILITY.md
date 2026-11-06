@@ -33,7 +33,7 @@ Não publicar alegações como “funciona em qualquer iPhone” sem testar as v
 
 ## Gamepad e iOS
 
-A interface mostra os controles que o navegador reporta via Gamepad API. A integração PS1 agora passa um mapa padrão explícito ao EmulatorJS; no jogo, abra Configurações → Controles se o perfil do controle variar. Um pad conectado não garante botões mapeados: confira se o diagnóstico muda a contagem de pressionados ao apertar botões. A compatibilidade Bluetooth em iPhone/iPad depende do modelo, versão do iOS e navegador; GitHub Pages em HTTPS não elimina limitações da Gamepad API.
+A interface mostra os controles que o navegador reporta via Gamepad API. Para PS1, antes de carregar EmulatorJS 4.2.3 o app compacta e normaliza índices de controles ativos, contornando um defeito confirmado no polling desse core quando o índice não começa em zero; também passa um mapa padrão explícito ao EmulatorJS. No jogo, abra Configurações → Controles se o perfil variar. Um pad conectado não garante botões mapeados: confira se o diagnóstico muda a contagem de pressionados ao apertar botões. A compatibilidade Bluetooth em iPhone/iPad depende do modelo, versão do iOS e navegador; GitHub Pages em HTTPS não elimina limitações da Gamepad API.
 
 ## Hospedagem
 
