@@ -24,7 +24,7 @@ const ps1DiscStatus = document.querySelector('#ps1-disc-status');
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
-let ps1BiosUrl = '';
+let ps1BiosFile = null;
 let activeExternalUrls = [];
 let activeGameUrl = '';
 let gamepadBridgeFrame = 0;
@@ -356,9 +356,8 @@ biosInput.addEventListener('change', async () => {
   try {
     const sample = await file.slice(0, Math.min(file.size, 4096)).arrayBuffer();
     if (!sample.byteLength) throw new Error('não foi possível ler o arquivo');
-    if (ps1BiosUrl) URL.revokeObjectURL(ps1BiosUrl);
-    ps1BiosUrl = URL.createObjectURL(file);
-    biosStatus.textContent = `BIOS selecionada: ${file.name} · ${formatBytes(file.size)} (local)`;
+    ps1BiosFile = file;
+    biosStatus.textContent = `BIOS selecionada: ${file.name} · ${formatBytes(file.size)}; será disponibilizada ao core com o nome original (local).`;
   } catch (error) {
     biosStatus.textContent = error instanceof Error ? `Falha ao ler a BIOS: ${error.message}` : 'Falha ao ler a BIOS selecionada.';
   }
@@ -538,6 +537,11 @@ async function prepareDiscCandidate(candidate, sequence) {
     let externalFiles = {};
     if (needsExternalAssets) {
       const assets = await buildExternalDiscAssets(candidate);
+      for (const [path, file] of assets) {
+        if (!file.size) throw new Error(`A faixa ${file.name} está vazia.`);
+        const sample = await file.slice(0, Math.min(file.size, 32)).arrayBuffer();
+        if (!sample.byteLength) throw new Error(`O navegador não conseguiu ler a faixa ${file.name}.`);
+      }
       externalFiles = Object.fromEntries([...assets].map(([path, file]) => [`/${path}`, file]));
       // On iOS, avoid a second full-size ZIP buffer. Desktop keeps the proven
       // bundled CUE/BIN path below; EJS_externalFiles remains the mobile path.
@@ -820,15 +824,20 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   // PCSX-ReARMed at the RetroArch menu because the core receives a bad ROM path.
   const gameUrl = URL.createObjectURL(file);
   activeGameUrl = gameUrl;
-  activeExternalUrls = Object.values(externalFiles).map((asset) => URL.createObjectURL(asset));
-  const externalFileMap = Object.fromEntries(Object.keys(externalFiles).map((path, index) => [path, activeExternalUrls[index]]));
+  const runtimeExternalFiles = { ...externalFiles };
+  if (system.id === 'ps1' && ps1BiosFile) runtimeExternalFiles[`/${ps1BiosFile.name}`] = ps1BiosFile;
+  activeExternalUrls = Object.values(runtimeExternalFiles).map((asset) => URL.createObjectURL(asset));
+  const externalFileMap = Object.fromEntries(Object.keys(runtimeExternalFiles).map((path, index) => [path, activeExternalUrls[index]]));
   running = true;
   const gamepadIndexFix = system.id === 'ps1' ? installGamepadIndexCompatibility() : false;
 
   Object.assign(window, {
     EJS_player: '#game-screen',
     EJS_core: system.core,
-    EJS_biosUrl: system.id === 'ps1' ? ps1BiosUrl : '',
+    // Blob URLs have random filenames; downloading a BIOS through biosUrl
+    // therefore hides its required scph*.bin filename from PCSX-ReARMed.
+    // Place the user-selected BIOS via externalFiles at its original name.
+    EJS_biosUrl: '',
     EJS_gameUrl: gameUrl,
     // Preserve the real extension in the filename passed to RetroArch. For a
     // direct CUE/M3U/CHD this determines the content type; the app header uses title.
@@ -1025,7 +1034,9 @@ window.addEventListener('resize', () => updatePs1TouchVisibility());
 async function enterGameFullscreen() {
   document.querySelector('#game-screen').appendChild(fullscreenButton);
   document.body.classList.add('game-fullscreen');
-  fullscreenButton.textContent = 'SAIR DA TELA CHEIA';
+  fullscreenButton.textContent = 'SAIR';
+  fullscreenButton.setAttribute('aria-label', 'Sair da tela cheia');
+  fullscreenButton.title = 'Sair da tela cheia';
   fullscreenButton.setAttribute('aria-pressed', 'true');
   if (player.requestFullscreen) {
     try { await player.requestFullscreen(); } catch { /* CSS viewport mode remains available, including on iPhone. */ }
@@ -1040,6 +1051,8 @@ async function exitGameFullscreen() {
   document.querySelector('.player-actions').prepend(fullscreenButton);
   document.body.classList.remove('game-fullscreen-tools-open');
   fullscreenButton.textContent = 'TELA CHEIA';
+  fullscreenButton.setAttribute('aria-label', 'Entrar em tela cheia');
+  fullscreenButton.title = 'Entrar em tela cheia';
   fullscreenButton.setAttribute('aria-pressed', 'false');
 }
 
@@ -1049,6 +1062,8 @@ document.addEventListener('fullscreenchange', () => {
     document.querySelector('.player-actions').prepend(fullscreenButton);
     document.body.classList.remove('game-fullscreen-tools-open');
     fullscreenButton.textContent = 'TELA CHEIA';
+    fullscreenButton.setAttribute('aria-label', 'Entrar em tela cheia');
+    fullscreenButton.title = 'Entrar em tela cheia';
     fullscreenButton.setAttribute('aria-pressed', 'false');
   }
 });

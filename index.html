@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20261106-immersive-controls" />
+    <link rel="stylesheet" href="./src/styles.css?v=20261106-ps1-mobile-fix" />
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -77,7 +77,7 @@
       <section class="notice" id="notice" hidden role="status"></section>
 
       <section class="player-section" id="player-section" hidden aria-label="Emulador">
-        <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><button id="toggle-fullscreen" class="secondary-button fullscreen-toggle" type="button" aria-pressed="false">TELA CHEIA</button><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
+        <div class="player-heading"><div><span class="eyebrow">SESSÃO LOCAL</span><strong id="player-title"></strong><span id="player-status" role="status">Preparando o núcleo…</span></div><div class="player-actions"><button id="toggle-fullscreen" class="secondary-button fullscreen-toggle" type="button" aria-pressed="false" aria-label="Entrar em tela cheia" title="Entrar em tela cheia">TELA CHEIA</button><label class="secondary-button choose-another" for="game-file">ESCOLHER OUTRO JOGO</label><button id="reload-session" class="secondary-button" type="button">RECARREGAR PÁGINA</button></div></div>
         <div id="game-screen" class="game-screen"></div>
         <button id="touch-settings-toggle" class="touch-settings-toggle" type="button" aria-expanded="false" aria-controls="touch-control-settings">CONTROLES · AJUSTES</button>
         <details class="touch-control-settings" id="touch-control-settings" aria-labelledby="touch-controls-title" hidden>

@@ -198,3 +198,10 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - A captura mais recente é de computador e mostra o menu do PCSX-ReARMed. Restaurei o fluxo ZIP no desktop e mantive `EJS_externalFiles` em iOS. A inicialização automática (`EJS_startOnLoaded`), core e configuração de BIOS não foram alterados.
 - Causa provável, ainda não validada com a ROM do usuário: o caminho novo de companions não está fazendo o core carregar o CUE no desktop. A restauração foi comparada com o estado anterior do código. Falta o usuário testar o mesmo conjunto CUE/BIN; só então será possível confirmar o boot.
 - Fontes: histórico Git local (`de4f5c5` e seu pai); documentação oficial do EmulatorJS para [`EJS_externalFiles`](https://emulatorjs.org/docs/options/) descreve caminhos no filesystem virtual, mas não garante comportamento de todo CUE/BIN ou core.
+
+## 2026-11-06 — BIOS local no iOS e engrenagem sobreposta
+
+- A análise do loader oficial EmulatorJS 4.2.3 encontrou a causa do caminho da BIOS: `downloadGameFile()` grava o BIOS usando o nome no fim da URL. O app estava convertendo a BIOS escolhida em uma URL `blob:`; essa URL termina em identificador aleatório e o core não procura o firmware sob esse nome. Agora o BIOS selecionado entra por `EJS_externalFiles` com o nome original, preservado no filesystem virtual.
+- Os BIN companheiros do CUE no fluxo iOS são lidos em amostras antes de iniciar o core; falha do provedor de arquivos passa a aparecer antes da tela do RetroArch.
+- O atalho de configurações foi movido para junto do botão de sair da tela cheia, no canto superior esquerdo, e o rótulo de sair foi encurtado. O identificador do CSS foi renovado para que Safari baixe a posição atualizada sem cache antigo.
+- Fontes: [opções oficiais EmulatorJS (`EJS_externalFiles`)](https://emulatorjs.org/docs/options/), [PCSX-ReARMed BIOS e nomes aceitos](https://docs.libretro.com/library/pcsx_rearmed/). `EJS_externalFiles` carrega os arquivos antes da ROM no código 4.2.3. A correção precisa de teste no iPhone com o arquivo BIOS/CUE/BIN do usuário; ainda não foi possível observar o boot real neste ambiente.
