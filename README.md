@@ -2,7 +2,7 @@
 
 Projeto de emulação retrô para navegador, com interface em português e seis sistemas no escopo inicial: Game Boy Color, Game Boy Advance, Nintendo 64, PlayStation, Dreamcast e PSP.
 
-> **Estado atual:** GBC/GBA e PS1 em integração experimental via EmulatorJS 4.2.3. PS1 usa o core `psx` (PCSX-ReARMed). Aceita imagem de disco única `.chd`, `.pbp` ou `.iso`; conjuntos `.cue/.bin` e listas multidisco ainda não são suportados pelo seletor individual. Não há certificação em aparelho físico.
+> **Estado atual:** GBC/GBA e PS1 em integração experimental via EmulatorJS 4.2.3. PS1 usa o core `psx` (PCSX-ReARMed). Aceita `.chd`, `.pbp` e `.iso`, além de conjuntos `.cue/.bin` e listas `.m3u` ao selecionar arquivos companheiros juntos ou a pasta do jogo. Ainda não há certificação de jogo real em aparelho físico.
 
 ## Princípios
 
@@ -49,6 +49,8 @@ O workflow em `.github/workflows/pages.yml` publica automaticamente cada atualiz
 A página inclui um diagnóstico pela Gamepad API. Conecte o controle antes ou depois de abrir o site e toque em **Verificar controle**. Se o iPega for listado, abra o menu de controles do EmulatorJS para mapear/confirmar os botões. Se não aparecer, o controle provavelmente está pareado em modo de teclado ou num modo incompatível com Gamepad API; remova o pareamento e refaça em modo Gamepad/HID, então recarregue a página. No iOS, o suporte a gamepads depende da versão do sistema, navegador e perfil Bluetooth do controle; o site não pode remover essas limitações. O controle virtual na tela é alternativa para toque.
 
 **iPhone:** o seletor não restringe extensões nativamente, pois o iOS pode não tratar extensões de ROM como `.gba` de forma compatível no filtro. Toque em **Escolher um jogo**, selecione o arquivo no app Arquivos e a página valida a extensão depois de recebê-lo. Se o arquivo estiver em um provedor de nuvem/compartilhamento e tocar nele não retornar ao Safari, copie-o para **No Meu iPhone** pelo app Arquivos e selecione a cópia local; algumas combinações iOS/provedor têm falhas no seletor.
+
+**PlayStation 1:** com CUE/BIN, selecione o `.cue` e todos os `.bin` que ele referencia na mesma seleção (ou selecione a pasta que os contém em navegadores compatíveis). Para jogos multidisco, selecione o `.m3u` e os CUE/BIN de todos os discos. Se forem encontrados vários jogos, escolha o título desejado. O app verifica as referências, monta um pacote temporário local para o EmulatorJS e não envia ROMs. Na seleção de pastas, se dois discos tiverem arquivos de mesmo nome e o navegador não preservar caminhos relativos, separe os arquivos numa pasta por jogo antes de selecionar.
 
 ### Tela cheia no celular
 

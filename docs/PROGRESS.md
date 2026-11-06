@@ -125,3 +125,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - O comportamento do core e a leitura de BIOS Blob precisam validação ponta a ponta. Não assumir que selecionar BIOS equivale a uma BIOS reconhecida pelo core.
 - Formatos de disco multipartes, SBI e troca de discos continuam para etapa posterior.
 - Deploy do commit `a9c4f4a` concluiu com sucesso; GitHub Pages respondeu HTTP 200 e a página publicada contém o core `psx` e o seletor opcional de BIOS. A execução de jogo real continua sem teste.
+
+## 2026-11-06 — Correção de seleção PS1 CUE/BIN e multidisco
+
+- Causa do botão **Iniciar jogo** apagado: o seletor antigo aceitava arquivos PS1 individuais, mas não conseguia preparar as faixas BIN referenciadas por CUE nem listas M3U; o jogo ficava inelegível para início.
+- Agora é possível escolher o CUE e todos os arquivos de faixa juntos, ou uma pasta (quando suportada pelo navegador). M3U pode reunir discos e seus CUE/faixas. Arquivos citados ausentes são indicados antes do início; jogos encontrados em conjunto podem ser escolhidos numa lista.
+- O app constrói um ZIP temporário local, sem envio, para o núcleo reconhecer CUE/M3U e caminhos de faixa. Imagens `.chd`, `.pbp` e `.iso` individuais seguem o fluxo anterior.
+- Verificado: `node --check src/app.js`. Ainda falta validar extração do pacote e inicialização/áudio/troca de disco com ROM de uso legítimo em navegadores reais; portanto PS1 continua experimental.
+- Firmware proprietário não foi incluído nem baixado; BIOS própria permanece opcional, com HLE como alternativa sujeita a compatibilidade variável.

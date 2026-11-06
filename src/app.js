@@ -11,16 +11,22 @@ const EJS_VERSION = '4.2.3';
 const EJS_DATA = `https://cdn.emulatorjs.org/${EJS_VERSION}/data/`;
 const grid = document.querySelector('#console-grid');
 const fileInput = document.querySelector('#game-file');
+const folderInput = document.querySelector('#game-folder');
 const notice = document.querySelector('#notice');
 const player = document.querySelector('#player-section');
 const gamepadStatus = document.querySelector('#gamepad-status');
 const fullscreenButton = document.querySelector('#toggle-fullscreen');
 const biosInput = document.querySelector('#ps1-bios-file');
 const biosStatus = document.querySelector('#ps1-bios-status');
+const ps1DiscChooser = document.querySelector('#ps1-disc-chooser');
+const ps1DiscSelect = document.querySelector('#ps1-disc-select');
+const ps1DiscStatus = document.querySelector('#ps1-disc-status');
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
 let ps1BiosUrl = '';
+let ps1Candidates = [];
+let pendingSelectionSequence = 0;
 const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
 
 grid.innerHTML = systems.map((system, index) => `
@@ -49,73 +55,296 @@ biosInput.addEventListener('change', async () => {
   }
 });
 
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files?.[0];
-  if (!file) return;
-  const sequence = ++selectionSequence;
+fileInput.addEventListener('change', () => handleSelectedFiles([...fileInput.files || []]));
+folderInput.addEventListener('change', () => handleSelectedFiles([...folderInput.files || []]));
+document.querySelector('#prepare-ps1-disc').addEventListener('click', async () => {
+  const candidate = ps1Candidates[Number(ps1DiscSelect.value)];
+  if (!candidate) return;
+  await prepareDiscCandidate(candidate, pendingSelectionSequence);
+});
+
+async function handleSelectedFiles(files) {
   fileInput.value = '';
-  const extension = `.${file.name.split('.').pop().toLowerCase()}`;
+  folderInput.value = '';
+  if (!files.length) return;
+  const sequence = ++selectionSequence;
+  pendingSelectionSequence = sequence;
+  pendingGame = null;
+  ps1DiscChooser.hidden = true;
+  document.querySelector('#start-game').disabled = true;
+
+  const extensions = files.map((file) => extensionOf(file.name));
+  const hasPs1Structure = extensions.some((ext) => ['.cue', '.m3u'].includes(ext));
+  if (hasPs1Structure || (files.length > 1 && files.some((file) => ['.bin', '.chd', '.pbp', '.iso'].includes(extensionOf(file.name))))) {
+    await preparePs1Selection(files, sequence);
+    return;
+  }
+  if (files.length > 1) {
+    showSelectionError('Escolha apenas uma ROM para GBC/GBA. Para PS1, selecione o CUE e seus arquivos companheiros juntos.');
+    return;
+  }
+
+  const file = files[0];
+  const extension = extensionOf(file.name);
   const matches = systems.filter((system) => system.extensions.includes(extension));
   const activeMatches = matches.filter((item) => item.active);
   const system = activeMatches.length === 1 ? activeMatches[0] : matches.length === 1 ? matches[0] : null;
-
-  document.querySelector('#selected-name').textContent = file.name;
-  document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · arquivo permanece neste dispositivo`;
-  document.querySelector('#selected-system').textContent = system?.short ?? (matches.length ? 'FORMATO COMPARTILHADO' : 'FORMATO A CONFERIR');
-  pendingGame = null;
-  const startButton = document.querySelector('#start-game');
-  startButton.disabled = true;
-  document.querySelector('#selection-message').textContent = system?.active
-    ? 'Arquivo recebido. Verificando se o navegador consegue ler a ROM…'
-    : 'Este formato ainda não pode ser iniciado nesta fase.';
-  document.querySelector('#start-hint').textContent = system?.active
-    ? `Arquivo selecionado. Lendo uma amostra local de ${file.name}…`
-    : 'Escolha uma ROM GBC/GBA ou imagem única de PS1 (.chd, .pbp, .iso) para habilitar Iniciar jogo.';
-  notice.hidden = false;
-
-  document.querySelector('#ps1-firmware').hidden = system?.id !== 'ps1';
-
-  if (system?.id === 'ps1' && ['.cue', '.bin', '.m3u'].includes(extension)) {
-    document.querySelector('#selection-message').textContent = 'Esse formato precisa de outros arquivos do mesmo disco, que ainda não podem ser enviados juntos nesta versão.';
-    document.querySelector('#start-hint').textContent = 'Para PS1, use um arquivo único .chd, .pbp ou .iso. CUE/BIN e M3U multidisco ficam para a próxima etapa.';
-    notice.textContent = 'Seleção recebida, mas CUE/BIN e M3U dependem de arquivos companheiros. Converta o disco para CHD ou escolha um PBP/ISO próprio.';
-    return;
-  }
-
   if (!system?.active) {
-    notice.textContent = system
-      ? `${system.name} está no plano, mas seu núcleo ainda não foi integrado. Nenhum jogo será iniciado.`
-      : 'Não foi possível identificar um console compatível sem ambiguidade. Formatos de disco compartilhados serão tratados nas etapas seguintes.';
+    showSelectionError(system
+      ? `${system.name} ainda não tem um núcleo integrado.`
+      : extension === '.bin'
+        ? 'Um BIN sozinho não identifica as faixas do PS1. Selecione o arquivo CUE e todas as faixas BIN juntos.'
+        : 'Formato não identificado. PS1 aceita CHD/PBP/ISO individuais ou CUE e suas faixas selecionados juntos.');
+    return;
+  }
+  if (system.id === 'ps1' && ['.cue', '.bin', '.m3u'].includes(extension)) {
+    showSelectionError('Para este formato, selecione o CUE/M3U e os arquivos que ele referencia no mesmo passo.');
+    return;
+  }
+  await prepareGame(file, system, file.name, sequence);
+}
+
+async function preparePs1Selection(files, sequence) {
+  const m3uFiles = files.filter((file) => extensionOf(file.name) === '.m3u');
+  const cueFiles = files.filter((file) => extensionOf(file.name) === '.cue');
+  const standalone = files.filter((file) => ['.chd', '.pbp', '.iso'].includes(extensionOf(file.name)));
+  const entries = m3uFiles.length ? m3uFiles : cueFiles.length ? cueFiles : standalone;
+  if (!entries.length) {
+    showSelectionError('Nenhum CUE/M3U ou disco individual CHD/PBP/ISO foi encontrado. Um BIN precisa do CUE correspondente.');
     return;
   }
 
-  const sampleBytes = Math.min(file.size, 4096);
+  const candidates = [];
+  const missing = new Set();
+  for (const entry of entries) {
+    const result = await collectDiscFiles(entry, files);
+    if (sequence !== selectionSequence) return;
+    if (result.files) candidates.push({ title: titleFromName(entry.name), entry, files: result.files });
+    else result.missing.forEach((name) => missing.add(name));
+  }
+  if (!candidates.length) {
+    const list = [...missing].slice(0, 5).join(', ');
+    showSelectionError(list
+      ? `Faltam arquivos citados no CUE/M3U: ${list}. Selecione o arquivo de índice e todas as faixas/discos juntos.`
+      : 'Não foi possível ler as referências do CUE/M3U. Confira se os arquivos estão completos e com os nomes originais.');
+    return;
+  }
+  if (candidates.length === 1) {
+    await prepareDiscCandidate(candidates[0], sequence);
+    return;
+  }
+  ps1Candidates = candidates;
+  ps1DiscSelect.replaceChildren(...candidates.map((candidate, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = candidate.title;
+    return option;
+  }));
+  ps1DiscChooser.hidden = false;
+  document.querySelector('#ps1-firmware').hidden = false;
+  document.querySelector('#selected-name').textContent = `${candidates.length} jogos PS1 encontrados`;
+  document.querySelector('#selected-meta').textContent = `${files.length} arquivos selecionados · permanecem neste dispositivo`;
+  document.querySelector('#selected-system').textContent = 'PS1';
+  document.querySelector('#selection-message').textContent = 'Escolha o título e toque em “Preparar este jogo”.';
+  document.querySelector('#start-hint').textContent = 'As faixas serão empacotadas localmente para o core; nada é enviado.';
+  notice.hidden = true;
+}
+
+async function prepareDiscCandidate(candidate, sequence) {
+  ps1DiscStatus.textContent = `Preparando ${candidate.title} localmente…`;
+  document.querySelector('#start-game').disabled = true;
+  try {
+    const archive = await createZipFile(candidate.files, candidate.title);
+    if (sequence !== selectionSequence) return;
+    ps1DiscChooser.hidden = true;
+    await prepareGame(archive, systems.find((system) => system.id === 'ps1'), candidate.title, sequence);
+    ps1DiscStatus.textContent = 'Conjunto de disco preparado localmente.';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'falha ao preparar o conjunto';
+    ps1DiscStatus.textContent = message;
+    showSelectionError(message);
+  }
+}
+
+async function prepareGame(file, system, title, sequence) {
+  document.querySelector('#selected-name').textContent = title;
+  document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · arquivos permanecem neste dispositivo`;
+  document.querySelector('#selected-system').textContent = system.short;
+  document.querySelector('#ps1-firmware').hidden = system.id !== 'ps1';
+  document.querySelector('#selection-message').textContent = 'Arquivo recebido. Verificando leitura local…';
+  document.querySelector('#start-hint').textContent = `Verificando ${title}…`;
+  notice.hidden = false;
   try {
     if (!file.size) throw new Error('o arquivo está vazio');
-    const sample = await file.slice(0, sampleBytes).arrayBuffer();
+    const sample = await file.slice(0, Math.min(file.size, 4096)).arrayBuffer();
     if (!sample.byteLength) throw new Error('não foi possível ler os dados do arquivo');
   } catch (error) {
     if (sequence !== selectionSequence) return;
-    const detail = error instanceof Error ? error.message : 'erro de leitura';
-    document.querySelector('#selection-message').textContent = `Falha ao ler o arquivo: ${detail}.`;
-    document.querySelector('#start-hint').textContent = 'O navegador não conseguiu ler essa ROM. Tente selecioná-la novamente.';
-    notice.textContent = 'A ROM foi selecionada, mas o navegador não conseguiu ler seu conteúdo. O arquivo continua no dispositivo.';
+    showSelectionError(`Falha ao ler o arquivo: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
     return;
   }
   if (sequence !== selectionSequence) return;
-
   if (running) {
-    document.querySelector('#selection-message').textContent = 'Encerre a sessão atual antes de iniciar outro jogo.';
-    document.querySelector('#start-hint').textContent = 'Uma sessão já está aberta; recarregue a página antes de iniciar outro jogo.';
-    notice.textContent = 'Já existe um jogo aberto. Encerre a sessão atual antes de iniciar outro.';
-  } else {
-    pendingGame = { file, system };
-    startButton.disabled = false;
-    document.querySelector('#selection-message').textContent = `Leitura local confirmada (${formatBytes(sampleBytes)}). Pressione “Iniciar jogo”.`;
-    document.querySelector('#start-hint').textContent = `Pronto para iniciar: ${file.name}`;
-    notice.textContent = 'ROM lida localmente e pronta. O arquivo não foi enviado.';
+    showSelectionError('Encerre a sessão atual antes de iniciar outro jogo. Recarregue a página e escolha a nova ROM.');
+    return;
   }
-});
+  pendingGame = { file, system, title };
+  document.querySelector('#start-game').disabled = false;
+  document.querySelector('#selection-message').textContent = 'Leitura local confirmada. Pressione “Iniciar jogo”.';
+  document.querySelector('#start-hint').textContent = `Pronto para iniciar: ${title}`;
+  notice.textContent = 'ROM pronta. O arquivo e as faixas continuam locais; nada foi enviado.';
+}
+
+function showSelectionError(message) {
+  pendingGame = null;
+  document.querySelector('#start-game').disabled = true;
+  document.querySelector('#selection-message').textContent = message;
+  document.querySelector('#start-hint').textContent = message;
+  notice.hidden = false;
+  notice.textContent = message;
+}
+
+function extensionOf(name) {
+  return `.${name.split('.').pop().toLowerCase()}`;
+}
+
+function titleFromName(name) {
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function normalizeDiscPath(path) {
+  const parts = String(path).replace(/\\/g, '/').split('/').filter((part) => part && part !== '.');
+  if (parts.some((part) => part === '..')) throw new Error('Caminho interno inválido em CUE/M3U.');
+  return parts.join('/');
+}
+
+function resolveDiscReference(reference, parentFile, files) {
+  const ref = normalizeDiscPath(reference);
+  const parentPath = normalizeDiscPath(parentFile.webkitRelativePath || parentFile.name);
+  const parentParts = parentPath.split('/');
+  parentParts.pop();
+  const relative = normalizeDiscPath([...parentParts, ref].join('/')).toLowerCase();
+  const exact = files.filter((file) => normalizeDiscPath(file.webkitRelativePath || file.name).toLowerCase() === relative);
+  if (exact.length === 1) return exact[0];
+  const basename = ref.split('/').pop().toLowerCase();
+  const byName = files.filter((file) => file.name.toLowerCase() === basename);
+  return byName.length === 1 ? byName[0] : null;
+}
+
+async function readDiscText(file) {
+  const bytes = await file.arrayBuffer();
+  let text = new TextDecoder('utf-8').decode(bytes);
+  if (text.includes('\uFFFD')) text = new TextDecoder('windows-1252').decode(bytes);
+  return text;
+}
+
+async function collectDiscFiles(entry, selectedFiles) {
+  const included = new Map();
+  const missing = [];
+  const add = (file) => included.set(normalizeDiscPath(file.webkitRelativePath || file.name), file);
+  const addCue = async (cue) => {
+    add(cue);
+    const content = await readDiscText(cue);
+    const refs = [...content.matchAll(/^\s*FILE\s+(?:"([^"]+)"|([^\s]+))\s+[^\r\n]+/gim)].map((match) => match[1] || match[2]);
+    if (!refs.length) {
+      missing.push(`${cue.name} (sem linhas FILE válidas)`);
+      return;
+    }
+    for (const ref of refs) {
+      const companion = resolveDiscReference(ref, cue, selectedFiles);
+      if (companion) add(companion);
+      else missing.push(ref);
+    }
+    const base = titleFromName(cue.name).toLowerCase();
+    selectedFiles.filter((file) => extensionOf(file.name) === '.sbi' && titleFromName(file.name).toLowerCase() === base).forEach(add);
+  };
+
+  const ext = extensionOf(entry.name);
+  if (ext === '.cue') {
+    await addCue(entry);
+  } else if (ext === '.m3u') {
+    add(entry);
+    const content = await readDiscText(entry);
+    const refs = content.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
+    if (!refs.length) missing.push(`${entry.name} (lista vazia)`);
+    for (const ref of refs) {
+      const disc = resolveDiscReference(ref, entry, selectedFiles);
+      if (!disc) {
+        missing.push(ref);
+      } else if (extensionOf(disc.name) === '.cue') {
+        await addCue(disc);
+      } else if (['.chd', '.pbp', '.iso'].includes(extensionOf(disc.name))) {
+        add(disc);
+      } else {
+        missing.push(`${ref} (formato de disco não reconhecido)`);
+      }
+    }
+  } else {
+    add(entry);
+  }
+  return missing.length ? { missing } : { files: [...included.entries()].map(([path, file]) => ({ path, file })) };
+}
+
+const crcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+async function fileCrc32(file) {
+  let crc = 0xffffffff;
+  const chunkSize = 1024 * 1024;
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const bytes = new Uint8Array(await file.slice(offset, Math.min(file.size, offset + chunkSize)).arrayBuffer());
+    for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function zipHeader(size, count, centralSize, centralOffset) {
+  const bytes = new Uint8Array(size);
+  return { bytes, view: new DataView(bytes.buffer) };
+}
+
+async function createZipFile(entries, title) {
+  if (entries.length > 65535) throw new Error('Há arquivos demais para montar este conjunto PS1.');
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  let centralSize = 0;
+  for (const { path, file } of entries) {
+    if (file.size > 0xffffffff) throw new Error(`${file.name} excede o tamanho suportado pelo pacote local.`);
+    const name = encoder.encode(path);
+    const crc = await fileCrc32(file);
+    const local = zipHeader(30 + name.length, 30 + name.length);
+    local.view.setUint32(0, 0x04034b50, true);
+    local.view.setUint16(4, 20, true); local.view.setUint16(6, 0x0800, true); local.view.setUint16(8, 0, true);
+    local.view.setUint16(10, 0, true); local.view.setUint16(12, 0x0021, true);
+    local.view.setUint32(14, crc, true); local.view.setUint32(18, file.size, true); local.view.setUint32(22, file.size, true);
+    local.view.setUint16(26, name.length, true); local.bytes.set(name, 30);
+    localParts.push(local.bytes, file);
+
+    const central = zipHeader(46 + name.length, 46 + name.length);
+    central.view.setUint32(0, 0x02014b50, true);
+    central.view.setUint16(4, 20, true); central.view.setUint16(6, 20, true); central.view.setUint16(8, 0x0800, true);
+    central.view.setUint16(10, 0, true); central.view.setUint16(12, 0, true); central.view.setUint16(14, 0x0021, true);
+    central.view.setUint32(16, crc, true); central.view.setUint32(20, file.size, true); central.view.setUint32(24, file.size, true);
+    central.view.setUint16(28, name.length, true); central.view.setUint32(42, offset, true); central.bytes.set(name, 46);
+    centralParts.push(central.bytes);
+    centralSize += central.bytes.length;
+    offset += local.bytes.length + file.size;
+    if (offset > 0xffffffff) throw new Error('O conjunto ultrapassa 4 GB e não pode ser preparado neste navegador.');
+  }
+  const end = zipHeader(22, 22);
+  end.view.setUint32(0, 0x06054b50, true); end.view.setUint16(8, entries.length, true); end.view.setUint16(10, entries.length, true);
+  end.view.setUint32(12, centralSize, true); end.view.setUint32(16, offset, true);
+  return new File([...localParts, ...centralParts, end.bytes], `${title}.zip`, { type: 'application/zip' });
+}
 
 document.querySelector('#start-game').addEventListener('click', async () => {
   if (!pendingGame || running) return;
@@ -125,7 +354,7 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   notice.hidden = true;
   document.querySelector('#start-hint').textContent = 'Preparando a ROM e iniciando o núcleo…';
   try {
-    await startGame(game.file, game.system);
+    await startGame(game.file, game.system, game.title);
   } catch (error) {
     running = false;
     const message = error instanceof Error ? error.message : String(error);
@@ -137,10 +366,10 @@ document.querySelector('#start-game').addEventListener('click', async () => {
   fileInput.value = '';
 });
 
-async function startGame(file, system) {
+async function startGame(file, system, title = file.name) {
   player.hidden = false;
   player.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  document.querySelector('#player-title').textContent = file.name;
+  document.querySelector('#player-title').textContent = title;
   const status = document.querySelector('#player-status');
   const mount = document.querySelector('#game-screen');
   mount.replaceChildren();
@@ -156,7 +385,7 @@ async function startGame(file, system) {
     EJS_core: system.core,
     EJS_biosUrl: system.id === 'ps1' ? ps1BiosUrl : '',
     EJS_gameUrl: gameUrl,
-    EJS_gameName: file.name,
+    EJS_gameName: title,
     EJS_gameID: gameId,
     EJS_pathtodata: EJS_DATA,
     EJS_startOnLoaded: true,

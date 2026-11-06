@@ -30,21 +30,29 @@
           <h1>O seu próximo<br /><span>continue?</span></h1>
           <p>Uma casa para seus clássicos. Escolha um jogo do seu dispositivo e jogue direto pelo navegador.</p>
           <div class="hero-actions">
-            <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER UM JOGO <span class="button-arrow">↗</span></label>
+            <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER ARQUIVOS DO JOGO <span class="button-arrow">↗</span></label>
+            <label class="secondary-button folder-button" for="game-folder">ESCOLHER PASTA PS1</label>
             <button class="primary-button start-button" id="start-game" type="button" disabled>▶ &nbsp; INICIAR JOGO</button>
             <button class="secondary-button reload-button" id="reload-page" type="button">↻ &nbsp; RECARREGAR PÁGINA</button>
           </div>
-          <input id="game-file" type="file" hidden />
-          <p class="microcopy file-picker-hint">Escolha uma ROM compatível. PlayStation 1 aceita imagem única .chd, .pbp ou .iso nesta etapa.</p>
+          <input id="game-file" type="file" multiple hidden aria-label="Selecionar arquivos do jogo" />
+          <input id="game-folder" type="file" webkitdirectory directory multiple hidden aria-label="Selecionar pasta do jogo PS1" />
+          <p class="microcopy file-picker-hint">PS1: selecione o CUE e todas as faixas BIN juntas, ou use “Escolher pasta PS1”. Também aceita CHD/PBP/ISO individuais.</p>
           <p class="microcopy start-hint" id="start-hint">Escolha uma ROM compatível; depois o botão Iniciar jogo será habilitado.</p>
           <section class="selected-game" id="selected-game" aria-live="polite">
             <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">JOGO SELECIONADO</span><strong id="selected-name">Nenhum jogo selecionado</strong><span id="selected-meta">GBC/GBA ou imagem única de PS1 (.chd, .pbp, .iso).</span><span id="selection-message">O nome aparecerá aqui após confirmar o arquivo na janela do sistema.</span></div><span class="selected-tag" id="selected-system">—</span>
           </section>
           <section class="ps1-firmware" id="ps1-firmware" hidden aria-label="BIOS opcional do PlayStation">
-            <div><span class="eyebrow">PLAYSTATION 1 · FIRMWARE OPCIONAL</span><strong id="ps1-bios-status">Sem BIOS selecionada. O núcleo tentará HLE, que pode ter incompatibilidades.</strong></div>
+            <div><span class="eyebrow">PLAYSTATION 1 · BIOS</span><strong id="ps1-bios-status">BIOS proprietária não vem incluída. O core tentará HLE; alguns jogos podem ter incompatibilidades.</strong></div>
             <label class="secondary-button" for="ps1-bios-file">ESCOLHER BIOS PRÓPRIA</label>
             <input id="ps1-bios-file" type="file" hidden />
             <p>Use apenas um arquivo de BIOS obtido do seu próprio console. Nada é enviado.</p>
+          </section>
+          <section class="ps1-disc-chooser" id="ps1-disc-chooser" hidden aria-label="Escolher jogo PS1 detectado">
+            <label for="ps1-disc-select" class="eyebrow">MAIS DE UM JOGO PS1 ENCONTRADO</label>
+            <select id="ps1-disc-select"></select>
+            <button class="secondary-button" id="prepare-ps1-disc" type="button">PREPARAR ESTE JOGO</button>
+            <p id="ps1-disc-status" role="status"></p>
           </section>
           <p class="microcopy">O arquivo é aberto localmente. Nada é enviado nesta versão.</p>
           <section class="gamepad-check" aria-labelledby="gamepad-title">

@@ -7,7 +7,7 @@ Esta tabela separa alvo de produto e suporte já demonstrado. GBC/GBA/PS1 têm i
 | Game Boy Color | Chrome, Edge, Firefox, Android, iOS | Experimental, não testado em aparelho | ROM `.gb`/`.gbc`; Gambatte via `gb`; SRAM local; controles/áudio/restart ainda precisam teste |
 | Game Boy Advance | Chrome, Edge, Firefox, Android, iOS | Experimental, não testado em aparelho | ROM `.gba`; mGBA via `gba`; SRAM local; desempenho/controles/áudio ainda precisam teste |
 | Nintendo 64 | Chrome, Edge, Firefox, Android, iOS | Planejado | Desempenho varia por jogo e aparelho; vídeo/WebGL |
-| PlayStation | Chrome, Edge, Firefox, Android, iOS | Experimental, sem ROM real validada | core `psx`/PCSX-ReARMed; `.chd`, `.pbp`, `.iso` em arquivo único; BIOS própria opcional; `.cue/.bin` e `.m3u` ainda não suportados neste seletor |
+| PlayStation | Chrome, Edge, Firefox, Android, iOS | Experimental, sem ROM real validada | core `psx`/PCSX-ReARMed; `.chd`, `.pbp`, `.iso`; grupos `.cue/.bin` e listas `.m3u` via seleção múltipla/pasta. O app verifica arquivos citados e habilita iniciar quando o conjunto está completo. BIOS própria opcional; HLE tem compatibilidade variável. |
 | Dreamcast | Chrome, Edge, Firefox, Android, iOS | Planejado | Candidato separado Flycast WASM; aparelho pode ser limitante |
 | PSP | Chrome, Edge, Firefox, Android, iOS | Planejado | Threads/SharedArrayBuffer e requisitos de hospedagem podem limitar navegadores |
 
@@ -15,13 +15,13 @@ Esta tabela separa alvo de produto e suporte já demonstrado. GBC/GBA/PS1 têm i
 
 O seletor HTML permite escolher arquivos, mas não dá ao site acesso irrestrito ao sistema de arquivos. iOS pode ter experiência de seleção e persistência diferente do Android/desktop. Arquivos de jogo são lidos localmente e não são enviados. O loader/core é obtido da CDN oficial do EmulatorJS 4.2.3; portanto, a primeira execução exige conexão.
 
-Escolha ROMs sem compactação para GBC/GBA: `.gb`/`.gbc` e `.gba`. Para PS1, nesta etapa use uma imagem de disco única `.chd`, `.pbp` ou `.iso`. O arquivo `.cue` descreve pistas que dependem de arquivos companheiros (geralmente BIN); como o seletor atual recebe um arquivo por vez, esse conjunto ainda não inicia. Extraia arquivos de `.zip` antes de selecionar. O cartão removível não muda o tipo do arquivo que o navegador entrega depois da escolha. A documentação oficial do EmulatorJS identifica `psx` como PCSX-ReARMed; a documentação Libretro lista suas extensões e avisa que BIOS HLE pode reduzir compatibilidade.
+Escolha ROMs sem compactação para GBC/GBA: `.gb`/`.gbc` e `.gba`. Para PS1, pode escolher uma imagem única `.chd`, `.pbp` ou `.iso`, ou selecionar os arquivos `.cue`/`.bin` em conjunto (também há seletor de pasta em navegadores que o suportam). O app valida as linhas `FILE` do CUE, relata itens faltantes e só então habilita **Iniciar jogo**. Ao preparar, cria um pacote ZIP temporário no aparelho para que o core encontre as faixas. Para jogos em vários discos, selecione `.m3u` junto com todos os CUE/BIN dos discos; o menu do EmulatorJS poderá oferecer troca de disco. O ZIP temporário é aberto pelo core, não enviado. Extraia arquivos `.zip` de origem antes de selecionar. O cartão removível não muda o tipo do arquivo que o navegador entrega depois da escolha. Esse fluxo foi validado por inspeção e verificação estática; boot com discos reais ainda depende de teste no aparelho do usuário.
 
 O autosave SRAM do EmulatorJS escreve no IndexedDB do navegador. A barra do motor também expõe save/load state e exportação/importação SRAM. Esses comandos ainda não foram verificados em teste de ponta a ponta. Limpeza de dados, quota esgotada ou políticas de armazenamento privado podem remover os saves.
 
 ## BIOS e saves de PS1
 
-O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor permite indicar uma BIOS que o usuário já possua; o projeto não inclui nem baixa arquivos de firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real.
+O core PCSX-ReARMed consegue iniciar sem BIOS usando HLE, mas alguns jogos podem apresentar incompatibilidades. O seletor pode receber uma BIOS que o usuário já possua; o projeto não inclui nem baixa firmware. A emulação de cartão de memória é gerenciada pelo core/frontend e o autosave de 30 segundos está configurado; falta validar gravação, retomada e exportação numa sessão PS1 real.
 
 ## Classificação futura
 
