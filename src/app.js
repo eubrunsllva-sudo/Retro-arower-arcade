@@ -42,85 +42,167 @@ const PS1_DEFAULT_CONTROLS = {
     20: { value: 'l', value2: 'RIGHT_STICK_X:+1' }, 21: { value: 'j', value2: 'RIGHT_STICK_X:-1' }, 22: { value: 'k', value2: 'RIGHT_STICK_Y:+1' }, 23: { value: 'i', value2: 'RIGHT_STICK_Y:-1' } },
   1: {}, 2: {}, 3: {},
 };
-const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v1';
+const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v2';
 const DEFAULT_TOUCH_LAYOUT = {
-  mode: 'both',
+  mode: 'dpad',
   controls: {
-    dpad: { x: 22, y: 50 }, stick: { x: 78, y: 50 },
-    a: { x: 60, y: 70 }, b: { x: 15, y: 48 }, x: { x: 15, y: 5 }, y: { x: 60, y: 5 },
-    l: { x: 12, y: 0 }, r: { x: 70, y: 0 }, select: { x: 10, y: 35 }, start: { x: 60, y: 35 },
+    dpad: { x: 14, y: 75 }, stick: { x: 14, y: 75 },
+    l: { x: 14, y: 16 }, r: { x: 86, y: 16 }, l2: { x: 14, y: 34 }, r2: { x: 86, y: 34 },
+    x: { x: 72, y: 67 }, y: { x: 82, y: 56 }, b: { x: 92, y: 67 }, a: { x: 82, y: 78 },
+    select: { x: 42, y: 92 }, start: { x: 58, y: 92 },
   },
 };
-const TOUCH_CONTROL_LABELS = { dpad: 'D-pad', stick: 'Analógico', a: 'A', b: 'B', x: 'X', y: 'Y', l: 'L1', r: 'R1', select: 'Select', start: 'Start' };
-
+const TOUCH_CONTROL_IDS = ['dpad', 'stick', 'l', 'r', 'l2', 'r2', 'x', 'y', 'b', 'a', 'select', 'start'];
 function readTouchLayout() {
   try {
     const stored = JSON.parse(localStorage.getItem(TOUCH_LAYOUT_KEY));
-    return { ...DEFAULT_TOUCH_LAYOUT, ...stored, controls: { ...DEFAULT_TOUCH_LAYOUT.controls, ...stored?.controls } };
+    const controls = { ...DEFAULT_TOUCH_LAYOUT.controls };
+    for (const id of TOUCH_CONTROL_IDS) {
+      const pos = stored?.controls?.[id];
+      if (Number.isFinite(pos?.x) && Number.isFinite(pos?.y)) controls[id] = { x: pos.x, y: pos.y };
+    }
+    return { mode: stored?.mode === 'analog' ? 'analog' : 'dpad', controls };
   } catch { return JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)); }
 }
-
 let touchLayout = readTouchLayout();
-
-function saveTouchLayout() {
-  const mode = document.querySelector('#touch-mode').value;
-  touchLayout.mode = mode;
-  const control = document.querySelector('#touch-control').value;
-  touchLayout.controls[control] = {
-    x: Number(document.querySelector('#touch-x').value),
-    y: Number(document.querySelector('#touch-y').value),
-  };
-  localStorage.setItem(TOUCH_LAYOUT_KEY, JSON.stringify(touchLayout));
-  document.querySelector('#touch-control-position').textContent = `${TOUCH_CONTROL_LABELS[control]}: X ${touchLayout.controls[control].x}% · Y ${touchLayout.controls[control].y}% — salvo neste aparelho; vale na próxima sessão.`;
-}
-
-function loadTouchControlPosition() {
-  const control = document.querySelector('#touch-control').value;
-  const position = touchLayout.controls[control] || { x: 50, y: 50 };
-  document.querySelector('#touch-x').value = position.x;
-  document.querySelector('#touch-y').value = position.y;
-  document.querySelector('#touch-x-value').textContent = `${position.x}%`;
-  document.querySelector('#touch-y-value').textContent = `${position.y}%`;
-}
-
-function buildPs1VirtualGamepad() {
-  const controls = touchLayout.controls;
-  const pct = (id, axis) => `${Math.max(0, Math.min(100, Number(controls[id]?.[axis] ?? 50)))}%`;
-  const items = [
-    { type: 'button', text: 'A', id: 'a', location: 'right', left: pct('a', 'x'), top: pct('a', 'y'), input_value: 8, bold: true },
-    { type: 'button', text: 'B', id: 'b', location: 'right', left: pct('b', 'x'), top: pct('b', 'y'), input_value: 0, bold: true },
-    { type: 'button', text: 'X', id: 'x', location: 'right', left: pct('x', 'x'), top: pct('x', 'y'), input_value: 9, bold: true },
-    { type: 'button', text: 'Y', id: 'y', location: 'right', left: pct('y', 'x'), top: pct('y', 'y'), input_value: 1, bold: true },
-    { type: 'button', text: 'L1', id: 'l', location: 'left', left: pct('l', 'x'), top: pct('l', 'y'), input_value: 10, fontSize: 16, bold: true },
-    { type: 'button', text: 'R1', id: 'r', location: 'right', left: pct('r', 'x'), top: pct('r', 'y'), input_value: 11, fontSize: 16, bold: true },
-    { type: 'button', text: 'Select', id: 'select', location: 'center', left: pct('select', 'x'), top: pct('select', 'y'), input_value: 2, fontSize: 14, block: true },
-    { type: 'button', text: 'Start', id: 'start', location: 'center', left: pct('start', 'x'), top: pct('start', 'y'), input_value: 3, fontSize: 14, block: true },
-  ];
-  if (touchLayout.mode === 'dpad' || touchLayout.mode === 'both') {
-    items.push({ type: 'dpad', id: 'dpad', location: 'left', left: pct('dpad', 'x'), top: pct('dpad', 'y'), joystickInput: false, inputValues: [4, 5, 6, 7] });
-  }
-  if (touchLayout.mode === 'analog' || touchLayout.mode === 'both') {
-    items.push({ type: 'zone', id: 'stick', location: 'left', left: pct('stick', 'x'), top: pct('stick', 'y'), joystickInput: true, inputValues: [19, 18, 17, 16] });
-  }
-  return items;
-}
-
-document.querySelector('#touch-mode').value = touchLayout.mode;
-document.querySelector('#touch-control').addEventListener('change', loadTouchControlPosition);
-for (const axis of ['x', 'y']) {
-  document.querySelector(`#touch-${axis}`).addEventListener('input', () => {
-    document.querySelector(`#touch-${axis}-value`).textContent = `${document.querySelector(`#touch-${axis}`).value}%`;
-  });
-  document.querySelector(`#touch-${axis}`).addEventListener('change', saveTouchLayout);
-}
-document.querySelector('#touch-mode').addEventListener('change', saveTouchLayout);
+const touchEditButton = document.querySelector('#touch-edit-toggle');
+const touchStatus = document.querySelector('#touch-control-position');
+const touchMode = document.querySelector('#touch-mode');
+touchMode.value = touchLayout.mode;
+touchMode.addEventListener('change', () => {
+  touchLayout.mode = touchMode.value === 'analog' ? 'analog' : 'dpad';
+  persistTouchLayout();
+  renderTouchControlMode();
+});
 document.querySelector('#touch-reset').addEventListener('click', () => {
   touchLayout = JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT));
-  document.querySelector('#touch-mode').value = touchLayout.mode;
-  loadTouchControlPosition();
-  saveTouchLayout();
+  touchMode.value = touchLayout.mode;
+  persistTouchLayout();
+  renderTouchControlMode();
+  placeTouchControls();
 });
-loadTouchControlPosition();
+touchEditButton.addEventListener('click', () => {
+  const root = document.querySelector('#ps1-touch-controls');
+  if (!root) {
+    touchStatus.textContent = 'Inicie um jogo PS1 para organizar os controles.';
+    return;
+  }
+  setTouchEditMode(root, !root.classList.contains('editing'));
+});
+function setTouchEditMode(root, editing) {
+  root.classList.toggle('editing', editing);
+  touchEditButton.textContent = editing ? 'CONCLUIR ORGANIZAÇÃO' : 'ARRASTAR CONTROLES';
+  const floatingButton = root.querySelector('.touch-edit-float');
+  if (floatingButton) floatingButton.textContent = editing ? 'CONCLUIR' : 'MOVER BOTÕES';
+  touchStatus.textContent = editing ? 'Arraste cada botão. A posição é salva neste aparelho.' : 'Layout salvo neste aparelho.';
+}
+function persistTouchLayout() {
+  try { localStorage.setItem(TOUCH_LAYOUT_KEY, JSON.stringify(touchLayout)); } catch { /* Layout still works for this session. */ }
+}
+function renderTouchControlMode() {
+  const root = document.querySelector('#ps1-touch-controls');
+  if (!root) return;
+  root.querySelector('[data-touch-control="dpad"]').hidden = touchLayout.mode !== 'dpad';
+  root.querySelector('[data-touch-control="stick"]').hidden = touchLayout.mode !== 'analog';
+}
+function placeTouchControls() {
+  const root = document.querySelector('#ps1-touch-controls');
+  if (!root) return;
+  for (const id of TOUCH_CONTROL_IDS) {
+    const element = root.querySelector(`[data-touch-control="${id}"]`);
+    if (!element) continue;
+    element.style.left = `${touchLayout.controls[id].x}%`;
+    element.style.top = `${touchLayout.controls[id].y}%`;
+  }
+}
+function initializePs1TouchControls() {
+  const mount = document.querySelector('#game-screen');
+  mount.classList.add('ps1-touch-controls-enabled');
+  let root = document.querySelector('#ps1-touch-controls');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'ps1-touch-controls';
+    root.className = 'ps1-touch-controls';
+    root.innerHTML = `<button class="touch-edit-float" type="button">MOVER BOTÕES</button>
+      <div class="touch-dpad" data-touch-control="dpad" aria-label="Direcional digital"><i>▲</i><i>◀</i><i>●</i><i>▶</i><i>▼</i></div>
+      <div class="touch-stick" data-touch-control="stick" aria-label="Direcional analógico"><span></span></div>
+      <button class="touch-shoulder" data-touch-control="l" type="button">L1</button><button class="touch-shoulder" data-touch-control="r" type="button">R1</button><button class="touch-shoulder" data-touch-control="l2" type="button">L2</button><button class="touch-shoulder" data-touch-control="r2" type="button">R2</button>
+      <button class="touch-face" data-touch-control="x" type="button">□</button><button class="touch-face" data-touch-control="y" type="button">△</button><button class="touch-face" data-touch-control="b" type="button">○</button><button class="touch-face" data-touch-control="a" type="button">×</button>
+      <button class="touch-system" data-touch-control="select" type="button">SELECT</button><button class="touch-system" data-touch-control="start" type="button">START</button>`;
+    mount.appendChild(root);
+    root.addEventListener('pointerdown', (event) => handleTouchControlDown(event));
+    root.addEventListener('pointermove', (event) => handleTouchControlMove(event));
+    root.addEventListener('pointerup', (event) => handleTouchControlUp(event));
+    root.addEventListener('pointercancel', (event) => handleTouchControlUp(event));
+    root.querySelector('.touch-edit-float').addEventListener('click', () => setTouchEditMode(root, !root.classList.contains('editing')));
+  }
+  mount.querySelector('.ejs_virtualGamepad_parent')?.setAttribute('aria-hidden', 'true');
+  renderTouchControlMode();
+  placeTouchControls();
+}
+const touchPointers = new Map();
+// RetroPad PS1 face mapping: Square=Y(1), Triangle=X(9), Circle=A(8), Cross=B(0).
+const touchInputs = { l: 10, r: 11, l2: 12, r2: 13, x: 1, y: 9, b: 8, a: 0, select: 2, start: 3 };
+function sendTouchInput(index, value) {
+  try { window.EJS_emulator?.gameManager?.simulateInput(0, index, value); } catch (error) { console.warn('Falha no controle virtual PS1', error); }
+}
+function setTouchDirection(control, event) {
+  const rect = control.getBoundingClientRect();
+  const x = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
+  const y = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));
+  if (control.dataset.touchControl === 'dpad') {
+    sendTouchInput(4, y < -0.35 ? 1 : 0); sendTouchInput(5, y > 0.35 ? 1 : 0);
+    sendTouchInput(6, x < -0.35 ? 1 : 0); sendTouchInput(7, x > 0.35 ? 1 : 0);
+  } else {
+    sendTouchInput(19, y < 0 ? Math.round(0x7fff * -y) : 0); sendTouchInput(18, y > 0 ? Math.round(0x7fff * y) : 0);
+    sendTouchInput(17, x < 0 ? Math.round(0x7fff * -x) : 0); sendTouchInput(16, x > 0 ? Math.round(0x7fff * x) : 0);
+    const knob = control.querySelector('span');
+    knob.style.transform = `translate(${x * 32}px, ${y * 32}px)`;
+  }
+}
+function releaseTouchControl(id) {
+  if (id in touchInputs) sendTouchInput(touchInputs[id], 0);
+  if (id === 'dpad') [4, 5, 6, 7].forEach((index) => sendTouchInput(index, 0));
+  if (id === 'stick') [16, 17, 18, 19].forEach((index) => sendTouchInput(index, 0));
+  const stick = document.querySelector('#ps1-touch-controls [data-touch-control="stick"] span');
+  if (stick) stick.style.transform = '';
+}
+function handleTouchControlDown(event) {
+  const control = event.target.closest('[data-touch-control]');
+  if (!control || control.hidden) return;
+  event.preventDefault();
+  event.stopPropagation();
+  control.setPointerCapture?.(event.pointerId);
+  const id = control.dataset.touchControl;
+  if (control.closest('.editing')) {
+    touchPointers.set(event.pointerId, { id, editing: true, control, startX: event.clientX, startY: event.clientY, x: touchLayout.controls[id].x, y: touchLayout.controls[id].y });
+  } else {
+    touchPointers.set(event.pointerId, { id, control, editing: false });
+    if (id === 'dpad' || id === 'stick') setTouchDirection(control, event);
+    else sendTouchInput(touchInputs[id], 1);
+  }
+}
+function handleTouchControlMove(event) {
+  const state = touchPointers.get(event.pointerId);
+  if (!state) return;
+  event.preventDefault();
+  if (state.editing) {
+    const rect = state.control.parentElement.getBoundingClientRect();
+    const marginX = Math.max(4, controlMargin(state.control.offsetWidth, rect.width));
+    const marginY = Math.max(4, controlMargin(state.control.offsetHeight, rect.height));
+    const x = Math.max(marginX, Math.min(100 - marginX, state.x + (event.clientX - state.startX) / rect.width * 100));
+    const y = Math.max(marginY, Math.min(100 - marginY, state.y + (event.clientY - state.startY) / rect.height * 100));
+    touchLayout.controls[state.id] = { x, y };
+    state.control.style.left = `${x}%`; state.control.style.top = `${y}%`;
+  } else if (state.id === 'dpad' || state.id === 'stick') setTouchDirection(state.control, event);
+}
+function controlMargin(size, total) { return total ? size / total * 50 : 4; }
+function handleTouchControlUp(event) {
+  const state = touchPointers.get(event.pointerId);
+  if (!state) return;
+  touchPointers.delete(event.pointerId);
+  if (state.editing) persistTouchLayout(); else releaseTouchControl(state.id);
+}
 
 grid.innerHTML = systems.map((system, index) => `
   <article class="console-card ${system.color} ${system.active ? 'console-active' : ''}">
@@ -315,16 +397,15 @@ async function prepareDiscCandidate(candidate, sequence) {
   try {
     if (sequence !== selectionSequence) return;
     ps1DiscChooser.hidden = true;
-    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const needsExternalAssets = isAppleMobile && ['.cue', '.m3u'].includes(extensionOf(candidate.entry?.name || ''));
+    const needsExternalAssets = ['.cue', '.m3u'].includes(extensionOf(candidate.entry?.name || ''));
     let gameFile = candidate.entry || candidate.files[0]?.file;
     let externalFiles = {};
     if (needsExternalAssets) {
       const assets = await buildExternalDiscAssets(candidate);
       externalFiles = Object.fromEntries([...assets].map(([path, file]) => [`/${path}`, file]));
-      // Keep cue/m3u as the ROM input; companion tracks are loaded one by one
-      // into the core filesystem, avoiding a second full-size ZIP buffer on iOS.
+      // Keep cue/m3u as the ROM input and load every companion through the
+      // documented external-files API. This avoids custom ZIP parsing and keeps
+      // each track at its expected path in the core filesystem.
       gameFile = candidate.entry;
     } else if (['.chd', '.pbp', '.iso'].includes(extensionOf(candidate.entry?.name || ''))) {
       gameFile = candidate.entry;
@@ -611,10 +692,10 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     EJS_pathtodata: EJS_DATA,
     ...(Object.keys(externalFileMap).length ? { EJS_externalFiles: externalFileMap } : {}),
     EJS_startOnLoaded: true,
+    ...(system.id === 'ps1' ? { EJS_disableCue: false } : {}),
     EJS_color: '#d6fa6a',
     EJS_fixedSaveInterval: 30000,
     ...(system.id === 'ps1' ? { EJS_defaultControls: PS1_DEFAULT_CONTROLS } : {}),
-    ...(system.id === 'ps1' ? { EJS_VirtualGamepadSettings: buildPs1VirtualGamepad() } : {}),
     EJS_Buttons: {
       playPause: true,
       restart: true,
@@ -622,7 +703,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       fullscreen: true,
       saveState: true,
       loadState: true,
-      gamepad: true,
+      gamepad: system.id !== 'ps1',
       saveSavFiles: true,
       loadSavFiles: true,
     },
@@ -630,7 +711,19 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     EJS_onGameStart: () => {
       releaseGameObjectUrl();
       releaseExternalObjectUrls();
-      status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado${gamepadIndexFix ? ' · gamepad compatível ativo' : ''}`;
+      if (system.id === 'ps1') {
+        initializePs1TouchControls();
+        const emulator = window.EJS_emulator;
+        const path = emulator?.fileName ? `/${emulator.fileName}` : '';
+        let mounted = false;
+        try { mounted = Boolean(path && emulator.gameManager.FS.analyzePath(path).exists); } catch { /* Keep a clear fallback status. */ }
+        status.textContent = mounted
+          ? `PCSX-ReARMed ativo · arquivo presente no core: ${emulator.fileName}. Se o menu RetroArch continuar, o formato não foi aceito.`
+          : `Core PS1 abriu sem confirmar a ROM (${emulator?.fileName || 'arquivo não identificado'}). Verifique o formato CUE/BIN.`;
+      } else {
+        status.textContent = `${coreNames[system.core]} em execução · autosave local habilitado`;
+      }
+      if (gamepadIndexFix) status.textContent += ' · gamepad compatível ativo';
       requestAnimationFrame(resizeEmulatorViewport);
     },
   });
