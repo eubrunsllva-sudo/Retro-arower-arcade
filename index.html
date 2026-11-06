@@ -13,8 +13,41 @@
         const hint = document.getElementById('start-hint');
         if (hint) hint.textContent = `Falha ao iniciar o JavaScript: ${event.message || 'consulte o console do navegador'}`;
       });
+
+      const startApp = () => {
+        const appScript = document.createElement('script');
+        appScript.src = './src/app.js?v=20261106-ps1-desktop-cue-fix';
+        appScript.onerror = () => {
+          const hint = document.getElementById('start-hint');
+          if (hint) hint.textContent = 'Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.';
+        };
+        document.head.appendChild(appScript);
+      };
+
+      const runAfterDocument = () => {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startApp, { once: true });
+        } else {
+          startApp();
+        }
+      };
+
+      if (new URLSearchParams(location.search).get('debug') === '1') {
+        const debugScript = document.createElement('script');
+        debugScript.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        debugScript.onload = () => {
+          window.eruda?.init({ defaults: { displaySize: 45 } });
+          runAfterDocument();
+        };
+        debugScript.onerror = () => {
+          console.warn('Eruda não carregou; iniciando o app sem o console móvel.');
+          runAfterDocument();
+        };
+        document.head.appendChild(debugScript);
+      } else {
+        runAfterDocument();
+      }
     </script>
-    <script defer src="./src/app.js?v=20261106-ps1-desktop-cue-fix" onerror="document.getElementById('start-hint').textContent='Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.'"></script>
   </head>
   <body>
     <noscript><p class="notice">Ative o JavaScript para carregar a seleção de ROM e o emulador.</p></noscript>
