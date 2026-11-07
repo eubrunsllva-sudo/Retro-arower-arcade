@@ -220,3 +220,10 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Painel de ajustes pode ser minimizado e arrastado; ao entrar em **Arrastar controles**, ele se fecha automaticamente para deixar os botões acessíveis. A posição do painel é salva e limitada à área visível após redimensionar/rotacionar.
 - Cache de CSS/JS renovado para que GitHub Pages e navegadores móveis baixem as mudanças.
 - Validação: sintaxe de `src/app.js` e `git diff --check`; teste tátil e rotação em iPhone ainda dependem de validação no aparelho.
+
+## 2026-11-06 — Perfis de controle por orientação
+
+- PS1 agora mantém layouts distintos de retrato e paisagem e alterna entre eles automaticamente ao girar ou redimensionar a tela. O modo D-pad/analógico e os tamanhos continuam compartilhados entre orientações.
+- Migração: o layout único antigo é preservado como paisagem; retrato começa com um posicionamento clássico dentro dos limites da tela. Alterações futuras em cada orientação são persistidas separadamente.
+- GBC/GBA continuam usando os controles virtuais do EmulatorJS; tamanhos e margens recebem regras responsivas para retrato/paisagem.
+- Cache dos arquivos JS/CSS renovado. `node --check src/app.js` e `git diff --check` passaram; interação real ainda precisa de confirmação no celular.

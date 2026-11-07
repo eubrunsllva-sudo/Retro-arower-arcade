@@ -49,7 +49,8 @@ const PS1_DEFAULT_CONTROLS = {
     20: { value: 'l', value2: 'RIGHT_STICK_X:+1' }, 21: { value: 'j', value2: 'RIGHT_STICK_X:-1' }, 22: { value: 'k', value2: 'RIGHT_STICK_Y:+1' }, 23: { value: 'i', value2: 'RIGHT_STICK_Y:-1' } },
   1: {}, 2: {}, 3: {},
 };
-const TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v2';
+const TOUCH_LAYOUT_KEY = 'retro-arower-touch-layout-v3';
+const LEGACY_TOUCH_LAYOUT_KEY = 'retro-arower-ps1-touch-v2';
 const TOUCH_VISIBILITY_KEY = 'retro-arower-ps1-touch-visibility-v1';
 const TOUCH_PANEL_POSITION_KEY = 'retro-arower-ps1-panel-position-v1';
 const DEFAULT_TOUCH_LAYOUT = {
@@ -63,22 +64,59 @@ const DEFAULT_TOUCH_LAYOUT = {
   },
 };
 const TOUCH_CONTROL_IDS = ['dpad', 'stick', 'l', 'r', 'l2', 'r2', 'x', 'y', 'b', 'a', 'select', 'start'];
-function readTouchLayout() {
+const DEFAULT_TOUCH_LAYOUTS = {
+  portrait: JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)),
+  landscape: {
+    ...JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)),
+    controls: {
+      ...DEFAULT_TOUCH_LAYOUT.controls,
+      dpad: { x: 14, y: 75 }, stick: { x: 14, y: 75 },
+      l: { x: 14, y: 16 }, r: { x: 86, y: 16 }, l2: { x: 14, y: 34 }, r2: { x: 86, y: 34 },
+      x: { x: 72, y: 67 }, y: { x: 82, y: 56 }, b: { x: 90, y: 67 }, a: { x: 82, y: 78 },
+      select: { x: 42, y: 92 }, start: { x: 58, y: 92 },
+    },
+  },
+};
+function normalizeTouchLayout(stored = {}) {
+  const controls = { ...DEFAULT_TOUCH_LAYOUT.controls };
+  for (const id of TOUCH_CONTROL_IDS) {
+    const position = stored.controls?.[id];
+    if (Number.isFinite(position?.x)) controls[id] = { ...controls[id], x: Math.max(6, Math.min(94, position.x)) };
+    if (Number.isFinite(position?.y)) controls[id] = { ...controls[id], y: Math.max(8, Math.min(92, position.y)) };
+  }
+  const sizes = {
+    dpad: Number.isFinite(stored.sizes?.dpad) ? Math.max(88, Math.min(220, stored.sizes.dpad)) : DEFAULT_TOUCH_LAYOUT.sizes.dpad,
+    stick: Number.isFinite(stored.sizes?.stick) ? Math.max(88, Math.min(220, stored.sizes.stick)) : DEFAULT_TOUCH_LAYOUT.sizes.stick,
+  };
+  return { mode: stored.mode === 'analog' ? 'analog' : 'dpad', sizes, controls };
+}
+function readTouchLayouts() {
   try {
     const stored = JSON.parse(localStorage.getItem(TOUCH_LAYOUT_KEY));
-    const controls = { ...DEFAULT_TOUCH_LAYOUT.controls };
-    for (const id of TOUCH_CONTROL_IDS) {
-      const pos = stored?.controls?.[id];
-      if (Number.isFinite(pos?.x) && Number.isFinite(pos?.y)) controls[id] = { x: pos.x, y: pos.y };
+    if (stored?.portrait || stored?.landscape) {
+      return {
+        portrait: normalizeTouchLayout(stored.portrait),
+        landscape: normalizeTouchLayout(stored.landscape),
+      };
     }
-    const sizes = {
-      dpad: Number.isFinite(stored?.sizes?.dpad) ? Math.max(88, Math.min(220, stored.sizes.dpad)) : 144,
-      stick: Number.isFinite(stored?.sizes?.stick) ? Math.max(88, Math.min(220, stored.sizes.stick)) : 148,
+    // The previous release stored one landscape layout. Preserve it there and
+    // give portrait a safe, fully visible default the first time it is opened.
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_TOUCH_LAYOUT_KEY));
+    return {
+      portrait: normalizeTouchLayout(DEFAULT_TOUCH_LAYOUTS.portrait),
+      landscape: normalizeTouchLayout(legacy || DEFAULT_TOUCH_LAYOUTS.landscape),
     };
-    return { mode: stored?.mode === 'analog' ? 'analog' : 'dpad', controls, sizes };
-  } catch { return JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT)); }
+  } catch {
+    return {
+      portrait: normalizeTouchLayout(DEFAULT_TOUCH_LAYOUTS.portrait),
+      landscape: normalizeTouchLayout(DEFAULT_TOUCH_LAYOUTS.landscape),
+    };
+  }
 }
-let touchLayout = readTouchLayout();
+const touchLayouts = readTouchLayouts();
+function getTouchOrientation() { return innerWidth > innerHeight ? 'landscape' : 'portrait'; }
+let currentTouchOrientation = getTouchOrientation();
+let touchLayout = touchLayouts[currentTouchOrientation];
 let touchVisibilityPreference = (() => {
   try {
     const saved = localStorage.getItem(TOUCH_VISIBILITY_KEY);
@@ -141,6 +179,31 @@ touchSettings.addEventListener('toggle', () => {
 touchMode.value = touchLayout.mode;
 dpadSizeInput.value = String(touchLayout.sizes.dpad);
 stickSizeInput.value = String(touchLayout.sizes.stick);
+function updateOrientationLayout() {
+  const nextOrientation = getTouchOrientation();
+  const mount = document.querySelector('#game-screen');
+  mount.classList.toggle('touch-layout-landscape', nextOrientation === 'landscape');
+  mount.classList.toggle('touch-layout-portrait', nextOrientation === 'portrait');
+  if (nextOrientation === currentTouchOrientation) return;
+  const sharedMode = touchLayout.mode;
+  const sharedSizes = { ...touchLayout.sizes };
+  currentTouchOrientation = nextOrientation;
+  touchLayout = touchLayouts[nextOrientation];
+  touchLayout.mode = sharedMode;
+  touchLayout.sizes = sharedSizes;
+  for (const layout of Object.values(touchLayouts)) {
+    layout.mode = sharedMode;
+    layout.sizes = { ...sharedSizes };
+  }
+  touchMode.value = touchLayout.mode;
+  dpadSizeInput.value = String(touchLayout.sizes.dpad);
+  stickSizeInput.value = String(touchLayout.sizes.stick);
+  renderTouchControlMode();
+  placeTouchControls();
+  persistTouchLayout();
+  if (activeSystemId === 'ps1') touchStatus.textContent = `Layout de ${nextOrientation === 'portrait' ? 'retrato' : 'paisagem'} carregado; este formato mantém sua própria organização.`;
+}
+updateOrientationLayout();
 function updateTouchSizeControls() {
   document.querySelector('#touch-dpad-size-value').value = `${touchLayout.sizes.dpad} px`;
   document.querySelector('#touch-stick-size-value').value = `${touchLayout.sizes.stick} px`;
@@ -149,6 +212,7 @@ function updateTouchSizeControls() {
 for (const [input, key] of [[dpadSizeInput, 'dpad'], [stickSizeInput, 'stick']]) {
   input.addEventListener('input', () => {
     touchLayout.sizes[key] = Number(input.value);
+    for (const layout of Object.values(touchLayouts)) layout.sizes[key] = touchLayout.sizes[key];
     updateTouchSizeControls();
     persistTouchLayout();
   });
@@ -199,11 +263,14 @@ touchPanelActions.addEventListener('pointerup', finishPanelDrag);
 touchPanelActions.addEventListener('pointercancel', finishPanelDrag);
 touchMode.addEventListener('change', () => {
   touchLayout.mode = touchMode.value === 'analog' ? 'analog' : 'dpad';
+  for (const layout of Object.values(touchLayouts)) layout.mode = touchLayout.mode;
   persistTouchLayout();
   renderTouchControlMode();
 });
 document.querySelector('#touch-reset').addEventListener('click', () => {
-  touchLayout = JSON.parse(JSON.stringify(DEFAULT_TOUCH_LAYOUT));
+  touchLayouts.portrait = normalizeTouchLayout(DEFAULT_TOUCH_LAYOUTS.portrait);
+  touchLayouts.landscape = normalizeTouchLayout(DEFAULT_TOUCH_LAYOUTS.landscape);
+  touchLayout = touchLayouts[currentTouchOrientation];
   touchMode.value = touchLayout.mode;
   dpadSizeInput.value = String(touchLayout.sizes.dpad);
   stickSizeInput.value = String(touchLayout.sizes.stick);
@@ -264,7 +331,7 @@ function setTouchEditMode(root, editing) {
   touchStatus.textContent = editing ? 'Arraste cada botão. A posição é salva neste aparelho.' : 'Layout salvo neste aparelho.';
 }
 function persistTouchLayout() {
-  try { localStorage.setItem(TOUCH_LAYOUT_KEY, JSON.stringify(touchLayout)); } catch { /* Layout still works for this session. */ }
+  try { localStorage.setItem(TOUCH_LAYOUT_KEY, JSON.stringify(touchLayouts)); } catch { /* Layout still works for this session. */ }
 }
 function renderTouchControlMode() {
   const root = document.querySelector('#ps1-touch-controls');
@@ -1166,9 +1233,9 @@ window.addEventListener('pagehide', () => {
 
 document.addEventListener('visibilitychange', handleEmulatorVisibility);
 window.addEventListener('pageshow', handleEmulatorVisibility);
-window.addEventListener('orientationchange', () => window.setTimeout(() => { updatePs1TouchVisibility(); resizeEmulatorViewport(); }, 250));
+window.addEventListener('orientationchange', () => window.setTimeout(() => { updateOrientationLayout(); updatePs1TouchVisibility(); resizeEmulatorViewport(); }, 250));
 window.visualViewport?.addEventListener('resize', () => window.requestAnimationFrame(resizeEmulatorViewport));
-window.addEventListener('resize', () => updatePs1TouchVisibility());
+window.addEventListener('resize', () => { updateOrientationLayout(); updatePs1TouchVisibility(); });
 
 async function enterGameFullscreen() {
   document.querySelector('#game-screen').appendChild(fullscreenButton);
