@@ -159,33 +159,37 @@
       throw new Error('A autorização expirou. Toque novamente em “Escolher ROM no Google Drive” e conecte a conta.');
     }
     const url = `${DRIVE_FILES_URL}${encodeURIComponent(doc.id)}?alt=media&supportsAllDrives=true`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (response.status === 401) {
-      accessToken = '';
-      accessTokenExpiresAt = 0;
-      throw new Error('A autorização do Google expirou. Toque novamente em “Escolher ROM no Google Drive” e autorize a conta.');
-    }
-    if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
-    if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
-    const total = Number(response.headers.get('Content-Length')) || Number(doc.sizeBytes) || 0;
-    if (!response.body?.getReader) {
-      const blob = await response.blob();
-      if (!blob.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-      onProgress(blob.size, total || blob.size);
-      return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
-    }
-    const reader = response.body.getReader();
-    const chunks = [];
-    let loaded = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      loaded += value.byteLength;
-      onProgress(loaded, total);
-    }
-    if (!loaded) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-    return new File(chunks, doc.name, { type: doc.mimeType || response.headers.get('Content-Type') || 'application/octet-stream', lastModified: Date.now() });
+    // XHR keeps the response in the browser's Blob store instead of retaining
+    // every streamed Uint8Array in JavaScript and then assembling another File.
+    // This lowers the temporary JS-heap peak on iOS/WebKit for large PS1 images.
+    // EmulatorJS still needs memory for its own core, so this cannot make a
+    // large image fit on devices whose available memory is too small.
+    const blob = await new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('GET', url);
+      request.responseType = 'blob';
+      request.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      request.onprogress = (event) => onProgress(event.loaded, event.lengthComputable ? event.total : Number(doc.sizeBytes) || 0);
+      request.onerror = () => reject(new Error(`Falha de rede ao baixar “${doc.name}” do Google Drive. Verifique a conexão e tente novamente.`));
+      request.onabort = () => reject(new Error(`O download de “${doc.name}” foi interrompido.`));
+      request.onload = () => {
+        if (request.status === 401) {
+          accessToken = '';
+          accessTokenExpiresAt = 0;
+          reject(new Error('A autorização do Google expirou. Toque novamente em “Escolher ROM no Google Drive” e autorize a conta.'));
+        } else if (request.status === 403) {
+          reject(new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`));
+        } else if (request.status < 200 || request.status >= 300) {
+          reject(new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${request.status}).`));
+        } else {
+          resolve(request.response);
+        }
+      };
+      request.send();
+    });
+    if (!blob?.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
+    onProgress(blob.size, Number(doc.sizeBytes) || blob.size);
+    return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
   }
 
   function disconnect() {

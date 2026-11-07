@@ -1,5 +1,13 @@
 # Registro de progresso
 
+## 2026-11-07 — Reduzir pressão de memória ao abrir ROM do Drive no iPhone
+
+- O fluxo anterior montava a ROM como uma lista de blocos binários JavaScript e depois criava um `File`. Para imagens PS1 grandes, isso podia manter uma cópia temporária extra antes de o EmulatorJS transferir o arquivo para o núcleo WebAssembly; no iPhone, o WebKit pode encerrar/recarregar a aba quando a memória disponível acaba.
+- Ajuste: a leitura do Drive agora usa `XMLHttpRequest` com resposta `Blob` e progresso, evitando manter os blocos da ROM em um array JavaScript. Erros HTTP e falhas de rede continuam com mensagens específicas.
+- Limite conhecido: o núcleo ainda precisa carregar a imagem para a memória do emulador. Uma ISO grande pode exceder a memória disponível do iPhone mesmo com esse pico temporário reduzido; não é possível prometer compatibilidade universal para imagens grandes em todos os aparelhos.
+- O texto de erro de rede do núcleo também passa a ser tratado no diagnóstico da página, para distinguir falha de carregamento de um encerramento silencioso por memória quando o navegador reportar a causa.
+- Estado: correção local na branch `fix/google-picker-cache-bust`; precisa ser publicada e confirmada no iPhone com a ROM afetada e o tamanho exato do arquivo.
+
 ## 2026-11-07 — Google Drive no celular: estado da seleção e transferência
 
 - Causa do aviso confuso: uma mensagem de erro da tentativa anterior podia permanecer visível durante a transferência da nova ROM do Drive. Em ISOs grandes, a transferência pode demorar e dar a impressão de que a nova seleção falhou.

@@ -1358,8 +1358,14 @@ function handleEmulatorVisibility() {
 }
 
 function reportRuntimeFailure(message) {
-  if (!running || !/out of memory|allocation failed|memory access out of bounds|webassembly|webgl|context lost|abort/i.test(message)) return;
-  document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 180)}. Em iPhone/iPad, arquivos PS1 grandes podem exceder a memória disponível.`;
+  if (!running) return;
+  if (/out of memory|allocation failed|memory access out of bounds|webassembly|webgl|context lost|abort/i.test(message)) {
+    document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 160)}. Em iPhone/iPad, uma imagem PS1 grande pode exceder a memória disponível.`;
+    return;
+  }
+  if (/networkerror|failed to fetch|load failed|network request failed/i.test(message)) {
+    document.querySelector('#player-status').textContent = `Falha de rede ao carregar a ROM ou um recurso do núcleo: ${message.slice(0, 140)}. Se a aba reiniciar, o iPhone pode ter encerrado a sessão por falta de memória.`;
+  }
 }
 
 window.addEventListener('error', (event) => {
