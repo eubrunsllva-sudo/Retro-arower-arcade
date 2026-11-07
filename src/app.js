@@ -627,6 +627,8 @@ drivePickerButton.addEventListener('click', async () => {
     return;
   }
   drivePickerButton.disabled = true;
+  notice.hidden = true;
+  document.querySelector('#selection-message').textContent = 'Aguardando a seleção no Google Drive…';
   try {
     if (!drivePickerWarmed) {
       setGoogleDriveStatus('Preparando o login seguro do Google. Ao terminar, toque novamente em “Conectar ao Google Drive”.');
@@ -641,19 +643,29 @@ drivePickerButton.addEventListener('click', async () => {
       const extension = extensionOf(doc.name || '');
       return systems.some((system) => system.active && system.extensions.includes(extension)) || extension === '.sbi';
     });
-    if (!supported.length) throw new Error('A seleção não contém ROM GBC/GBA ou arquivo PS1 compatível.');
+    if (!supported.length) {
+      const message = 'A seleção não contém ROM GBC/GBA ou arquivo PS1 compatível.';
+      setGoogleDriveStatus(message);
+      showSelectionError(message);
+      return;
+    }
     const skipped = docs.length - supported.length;
     const files = [];
     for (let index = 0; index < supported.length; index += 1) {
       const doc = supported[index];
-      setGoogleDriveStatus(`Lendo ${index + 1}/${supported.length}: ${doc.name} · temporariamente na memória desta sessão…`);
-      const file = await window.RetroGoogleDrive.readFile(doc);
+      const expectedBytes = Number(doc.sizeBytes) || 0;
+      const systemLabel = ['.iso', '.chd', '.pbp', '.cue', '.bin', '.m3u'].includes(extensionOf(doc.name || '')) ? 'PS1' : 'ROM';
+      setGoogleDriveStatus(`${systemLabel} reconhecido · baixando ${index + 1}/${supported.length}: ${doc.name}${expectedBytes ? ` (${formatBytes(expectedBytes)})` : ''}…`);
+      const file = await window.RetroGoogleDrive.readFile(doc, (loaded, total) => {
+        setGoogleDriveStatus(`Baixando ${doc.name}: ${formatBytes(loaded)}${total ? ` / ${formatBytes(total)}` : ''} · mantenha esta página aberta…`);
+      });
       driveMemoryFiles.add(file);
       files.push(file);
     }
     await handleSelectedFiles(files);
-    if (skipped) setGoogleDriveStatus(`${files.length} arquivo(s) lido(s); ${skipped} item(ns) sem formato compatível foram ignorados.`);
-    else setGoogleDriveStatus(`${files.length} arquivo(s) lido(s) temporariamente na memória. Nada foi salvo no aparelho.`);
+    if (pendingGame) setGoogleDriveStatus(`${pendingGame.title} pronta para iniciar. O arquivo permanece temporariamente na memória desta sessão.`);
+    else if (skipped) setGoogleDriveStatus(`${files.length} arquivo(s) lido(s); ${skipped} item(ns) sem formato compatível foram ignorados. Confira o aviso da seleção.`);
+    else setGoogleDriveStatus(`${files.length} arquivo(s) transferido(s). Confira o aviso da seleção para ver o próximo passo.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao ler a seleção do Google Drive.';
     setGoogleDriveStatus(message);
