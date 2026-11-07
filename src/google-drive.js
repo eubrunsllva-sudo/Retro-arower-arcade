@@ -86,7 +86,7 @@
           else if (data.action === window.google.picker.Action.CANCEL) resolve([]);
         })
         .build();
-      onStatus('Conectado ao Google. Escolha uma ROM; para PS1 em CUE, selecione também os BIN citados pelo CUE.');
+      onStatus('Conta Google conectada. Escolha uma ROM; para PS1 em CUE, selecione também os BIN citados pelo CUE.');
       picker.setVisible(true);
     } catch (error) {
       reject(error);

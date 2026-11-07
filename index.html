@@ -66,7 +66,7 @@
           <div class="hero-actions">
             <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER ARQUIVOS DO JOGO <span class="button-arrow">↗</span></label>
             <label class="secondary-button folder-button" for="game-folder">ESCOLHER PASTA PS1</label>
-            <button class="secondary-button drive-picker-button" id="google-drive-picker" type="button">☁ &nbsp; ESCOLHER ROM NO GOOGLE DRIVE</button>
+            <button class="secondary-button drive-picker-button" id="google-drive-picker" type="button">☁ &nbsp; CONECTAR AO GOOGLE DRIVE</button>
             <button class="primary-button start-button" id="start-game" type="button" disabled>▶ &nbsp; INICIAR JOGO</button>
             <button class="secondary-button reload-button" id="reload-page" type="button">↻ &nbsp; RECARREGAR PÁGINA</button>
           </div>
@@ -76,9 +76,9 @@
           <p class="microcopy start-hint" id="start-hint">Escolha uma ROM compatível; depois o botão Iniciar jogo será habilitado.</p>
           <details class="drive-setup" id="google-drive-setup">
             <summary>ACESSO SEGURO AO GOOGLE DRIVE</summary>
-            <p>O acesso usa a janela oficial do Google e permite selecionar somente os arquivos que você escolher. O site não recebe sua senha nem armazena tokens de acesso.</p>
+            <p>Toque em “Conectar ao Google Drive” para entrar na sua conta pela janela oficial do Google e escolher uma ROM. O site nunca recebe sua senha; só acessa os arquivos que você selecionar.</p>
             <div><button class="secondary-button" id="google-drive-disconnect" type="button">LIMPAR SESSÃO DO GOOGLE</button></div>
-            <p id="google-drive-status" role="status" aria-live="polite">Verificando a configuração segura do Google Drive…</p>
+            <p id="google-drive-status" role="status" aria-live="polite">Verificando se o login do Google está pronto…</p>
           </details>
           <section class="selected-game" id="selected-game" aria-live="polite">
             <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">JOGO SELECIONADO</span><strong id="selected-name">Nenhum jogo selecionado</strong><span id="selected-meta">GBC/GBA ou imagem única de PS1 (.chd, .pbp, .iso).</span><span id="selection-message">O nome aparecerá aqui após confirmar o arquivo na janela do sistema.</span></div><span class="selected-tag" id="selected-system">—</span>

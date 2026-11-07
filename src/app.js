@@ -33,11 +33,20 @@ const driveMemoryFiles = new WeakSet();
 let driveConfig = null;
 let drivePickerWarmed = false;
 if (window.RetroGoogleDrive?.loadConfig) {
-  window.RetroGoogleDrive.loadConfig().then((config) => {
+  window.RetroGoogleDrive.loadConfig().then(async (config) => {
     driveConfig = config;
-    setGoogleDriveStatus(config.configured
-      ? 'Pronto. Toque em “Escolher ROM no Google Drive” para conectar sua conta.'
-      : 'O login do Google ainda não está ativo. A configuração do site está sendo concluída.');
+    if (!config.configured) {
+      setGoogleDriveStatus('O login do Google ainda não está ativo. A configuração do site está sendo concluída.');
+      return;
+    }
+    setGoogleDriveStatus('Preparando o login seguro do Google…');
+    try {
+      await window.RetroGoogleDrive.warmup();
+      drivePickerWarmed = true;
+      setGoogleDriveStatus('Pronto. Toque em “Conectar ao Google Drive” para entrar e escolher sua ROM.');
+    } catch (error) {
+      setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível carregar o login do Google.');
+    }
   }).catch((error) => {
     setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google Drive.');
   });
@@ -620,10 +629,10 @@ drivePickerButton.addEventListener('click', async () => {
   drivePickerButton.disabled = true;
   try {
     if (!drivePickerWarmed) {
-      setGoogleDriveStatus('Carregando as bibliotecas seguras do Google. Ao terminar, toque novamente no botão.');
+      setGoogleDriveStatus('Preparando o login seguro do Google. Ao terminar, toque novamente em “Conectar ao Google Drive”.');
       await window.RetroGoogleDrive.warmup();
       drivePickerWarmed = true;
-      setGoogleDriveStatus('Pronto para conectar. Toque novamente em “Escolher ROM no Google Drive”.');
+      setGoogleDriveStatus('Login pronto. Toque novamente em “Conectar ao Google Drive” para entrar e escolher sua ROM.');
       return;
     }
     const docs = await window.RetroGoogleDrive.pickFiles(setGoogleDriveStatus);
