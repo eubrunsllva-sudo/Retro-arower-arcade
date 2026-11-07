@@ -263,3 +263,22 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Nenhuma ROM ou token é gravado no aparelho ou enviado ao backend do projeto. A ROM ainda trafega pela rede e usa memória durante a sessão; a emulação permanece no dispositivo e arquivos grandes podem exceder os limites de memória do navegador.
 - Documentado o setup do Google Cloud em `docs/GOOGLE_DRIVE.md`, incluindo restrições da API key, origem GitHub Pages e `localhost`.
 - Limite de verificação: os IDs/credenciais Google do proprietário ainda não foram configurados; portanto, a autorização real e a seleção do Picker precisam de validação na branch com o projeto Cloud do usuário.
+
+
+## 2026-11-07 — Etapa: autenticação segura do Google Drive (branch experimental)
+
+### Feito
+
+- Criada a branch `feature/google-drive-secure-login`; ela ainda não substitui a versão de produção.
+- Removidos do formulário público os campos de Client ID, API key e número do projeto. A página agora mostra o estado da conexão e oferece limpar a sessão.
+- Preparado o fluxo Google Identity Services Authorization Code em janela oficial, com troca do código numa Cloudflare Pages Function.
+- O escopo continua limitado a `drive.file`; o Client Secret fica no ambiente do Cloudflare, tokens são temporários e não são guardados no navegador ou servidor.
+- Adicionados endpoints Pages em `functions/api/google/config.js` e `functions/api/google/token.js`, com origem permitida, cabeçalho anti-CSRF, validação de método e resposta sem cache.
+- Atualizada a documentação para o domínio `retroarcade.xyz.br`, variáveis de produção/preview e limites de privacidade.
+
+### O que falta
+
+- Criar um projeto Google Cloud dedicado ao Retro Arcade, habilitar Drive API e Picker API e configurar OAuth.
+- Cadastrar as variáveis no Cloudflare Pages: GOOGLE_CLIENT_ID, GOOGLE_API_KEY, GOOGLE_PROJECT_NUMBER e GOOGLE_CLIENT_SECRET (este último como **Secret**, nunca no Git).
+- Fazer deploy da branch de teste e validar autorização, Picker, leitura de um arquivo pequeno e início de jogo. Ainda não foi possível validar a autenticação real sem as credenciais do proprietário.
+- Após validação, integrar a branch à produção Cloudflare. O GitHub Pages antigo ainda precisa ser despublicado nas configurações do repositório.
