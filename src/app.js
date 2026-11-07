@@ -32,14 +32,18 @@ const driveDisconnectButton = document.querySelector('#google-drive-disconnect')
 const driveMemoryFiles = new WeakSet();
 let driveConfig = null;
 let drivePickerWarmed = false;
-window.RetroGoogleDrive?.loadConfig().then((config) => {
-  driveConfig = config;
-  setGoogleDriveStatus(config.configured
-    ? 'Pronto. Toque em “Escolher ROM no Google Drive” para conectar sua conta.'
-    : 'O login do Google ainda não está ativo. A configuração do site está sendo concluída.');
-}).catch((error) => {
-  setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google Drive.');
-});
+if (window.RetroGoogleDrive?.loadConfig) {
+  window.RetroGoogleDrive.loadConfig().then((config) => {
+    driveConfig = config;
+    setGoogleDriveStatus(config.configured
+      ? 'Pronto. Toque em “Escolher ROM no Google Drive” para conectar sua conta.'
+      : 'O login do Google ainda não está ativo. A configuração do site está sendo concluída.');
+  }).catch((error) => {
+    setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google Drive.');
+  });
+} else {
+  setGoogleDriveStatus('O módulo Google Drive não carregou. Recarregue a página e tente novamente.');
+}
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
@@ -596,6 +600,14 @@ driveDisconnectButton.addEventListener('click', () => {
   setGoogleDriveStatus('Sessão do Google limpa neste navegador. Conecte novamente quando quiser.');
 });
 drivePickerButton.addEventListener('click', async () => {
+  if (!driveConfig) {
+    try { driveConfig = await window.RetroGoogleDrive?.loadConfig(); }
+    catch (error) {
+      driveSetup.open = true;
+      setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google.');
+      return;
+    }
+  }
   if (!driveConfig?.configured) {
     driveSetup.open = true;
     setGoogleDriveStatus('O login do Google ainda está sendo configurado no site. Tente novamente quando estiver ativo.');
