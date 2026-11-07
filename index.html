@@ -7,7 +7,7 @@
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
     <link rel="stylesheet" href="./src/styles.css?v=20261107-secure-google-login" />
-    <script src="./src/google-drive.js?v=20261107-secure-google-login" defer></script>
+    <script src="./src/google-drive.js?v=20261107-drive-folder-picker" defer></script>
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -17,7 +17,7 @@
 
       const startApp = () => {
         const appScript = document.createElement('script');
-        appScript.src = './src/app.js?v=20261107-secure-google-login';
+        appScript.src = './src/app.js?v=20261107-drive-folder-picker';
         appScript.onerror = () => {
           const hint = document.getElementById('start-hint');
           if (hint) hint.textContent = 'Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.';
