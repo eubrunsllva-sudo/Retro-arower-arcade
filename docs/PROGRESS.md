@@ -240,3 +240,9 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Os rótulos longos dos controles virtuais de GBC/GBA agora usam tamanho de texto responsivo, centralização e limite interno para caber dentro dos próprios botões. Família tipográfica, cor e transparência continuam as mesmas.
 - Regras limitadas à sessão de GBC/GBA; PS1 permanece inalterado. Cache JS/CSS atualizado.
 - Validação: `node --check src/app.js` e `git diff --check`.
+
+## 2026-11-06 — Rótulos dos botões inferiores GBC/GBA
+
+- Complementada a regra anterior com seletores dos grupos superior e inferior do gamepad do EmulatorJS, onde Select, Start, Rápido e Lento são renderizados separadamente dos botões de ação.
+- Texto responsivo, centralizado e contido no botão; cores, família tipográfica e transparência mantidas. A regra é restrita às sessões GBC/GBA.
+- Cache JS/CSS atualizado. Verificações: `node --check src/app.js` e `git diff --check`.

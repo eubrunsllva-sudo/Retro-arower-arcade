@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20261106-button-label-fit" />
+    <link rel="stylesheet" href="./src/styles.css?v=20261106-bottom-label-fit" />
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -16,7 +16,7 @@
 
       const startApp = () => {
         const appScript = document.createElement('script');
-        appScript.src = './src/app.js?v=20261106-button-label-fit';
+        appScript.src = './src/app.js?v=20261106-bottom-label-fit';
         appScript.onerror = () => {
           const hint = document.getElementById('start-hint');
           if (hint) hint.textContent = 'Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.';
