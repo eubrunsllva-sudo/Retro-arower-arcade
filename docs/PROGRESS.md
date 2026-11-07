@@ -313,3 +313,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Fazer deploy da branch de teste e validar autorização, Picker, leitura de um arquivo pequeno e início de jogo. Ainda não foi possível validar a autenticação real sem as credenciais do proprietário.
 - Após validação, integrar a branch à produção Cloudflare. O GitHub Pages antigo ainda precisa ser despublicado nas configurações do repositório.
 - Verificação de sintaxe JavaScript concluída para o app, módulo Drive e duas Pages Functions; isso não substitui o teste OAuth real no navegador.
+
+## 2026-11-07 — Download do Google Drive em fluxo para iOS
+
+- Relato: no Chrome do iPhone, a aba reiniciava ao terminar de receber ROMs do Drive. A interface registrava o progresso do download e depois perdia todo o estado. O aplicativo não contém redirecionamento/reload automático nesse fluxo; a hipótese mais provável é encerramento da aba pelo WebKit quando a resposta inteira, o Blob e a cópia interna do núcleo disputam memória. Esse encerramento pode ocorrer sem erro JS observável.
+- Alteração: o download agora usa `fetch()` com leitura por fluxo e grava os blocos diretamente no Origin Private File System (OPFS) temporário do próprio site. O código não monta o arquivo inteiro em um Blob novo durante a transferência. Nomes e extensões originais são preservados para detecção de ROM, CUE e faixas BIN; erros de rede, autorização, quota e falta de suporte são mostrados na página.
+- Atualizados os textos da interface e os identificadores de cache do módulo Drive e do app para impedir que o navegador reutilize a implementação antiga.
+- Limitação: o EmulatorJS ainda precisa carregar a imagem no núcleo WebAssembly para emular. OPFS reduz o pico durante o download, mas não elimina o limite de memória do iOS na etapa seguinte. O resultado precisa ser confirmado no iPhone com uma ROM menor e depois com a ISO de 648 MB; não foi possível reproduzir o encerramento neste ambiente.
+- Se a sessão for concluída, os arquivos ficam no armazenamento privado temporário deste site, não são enviados ao servidor do projeto nem apresentados como armazenamento permanente.
