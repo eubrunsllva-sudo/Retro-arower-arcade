@@ -282,3 +282,4 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Cadastrar as variáveis no Cloudflare Pages: GOOGLE_CLIENT_ID, GOOGLE_API_KEY, GOOGLE_PROJECT_NUMBER e GOOGLE_CLIENT_SECRET (este último como **Secret**, nunca no Git).
 - Fazer deploy da branch de teste e validar autorização, Picker, leitura de um arquivo pequeno e início de jogo. Ainda não foi possível validar a autenticação real sem as credenciais do proprietário.
 - Após validação, integrar a branch à produção Cloudflare. O GitHub Pages antigo ainda precisa ser despublicado nas configurações do repositório.
+- Verificação local de sintaxe concluída para o app, módulo Drive e duas Pages Functions; isso não substitui o teste OAuth real no navegador.
