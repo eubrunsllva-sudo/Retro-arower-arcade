@@ -13,7 +13,7 @@ Esta tabela separa alvo de produto e suporte já demonstrado. GBC/GBA/PS1 têm i
 
 ## Acesso a arquivos
 
-O seletor HTML permite escolher arquivos, mas não dá ao site acesso irrestrito ao sistema de arquivos. iOS pode ter experiência de seleção e persistência diferente do Android/desktop. Arquivos de jogo são lidos localmente e não são enviados. O loader/core é obtido da CDN oficial do EmulatorJS 4.2.3; portanto, a primeira execução exige conexão.
+O seletor HTML permite escolher arquivos, mas não dá ao site acesso irrestrito ao sistema de arquivos. Opcionalmente, o Google Picker pode abrir ROMs de Drive após configurar Client ID, chave API e projeto Google Cloud; o app pede `drive.file` para os arquivos escolhidos. O conteúdo é lido para a memória da aba, sem salvá-lo no aparelho nem enviá-lo a um servidor do projeto. iOS pode ter limites de memória e diferenças de seleção. O loader/core é obtido da CDN oficial do EmulatorJS 4.2.3; a primeira execução exige conexão. Consulte [o guia Drive](GOOGLE_DRIVE.md).
 
 Escolha ROMs sem compactação para GBC/GBA: `.gb`/`.gbc` e `.gba`. Para PS1, pode escolher uma imagem única `.chd`, `.pbp` ou `.iso`, ou selecionar os arquivos `.cue`/`.bin` em conjunto (também há seletor de pasta em navegadores que o suportam). A varredura reúne listas M3U, CUE e imagens individuais; evita repetir discos já incluídos em uma lista multidisco. O app valida as linhas `FILE` do CUE, relata itens faltantes e só então habilita **Iniciar jogo**. BIN sem CUE é listado à parte (faixas Track são agrupadas), mas não garante o tipo/faixa do disco; esse fluxo cria um pacote ZIP temporário para tentar gerar um CUE local. No desktop, conjuntos CUE/M3U e faixas voltam a ser empacotados em ZIP local, o fluxo usado antes da regressão identificada em 06/11/2026. No iPhone/iPad, o índice continua sendo passado com os arquivos companheiros por `EJS_externalFiles` para reduzir o pico de memória. Para jogos em vários discos, selecione `.m3u` junto com todos os CUE/BIN dos discos; nenhum pacote ou ROM é enviado. Extraia arquivos `.zip` de origem antes de selecionar. O cartão removível não muda o tipo do arquivo que o navegador entrega depois da escolha. A restauração do caminho desktop é uma correção baseada no histórico e ainda precisa ser confirmada com o conjunto CUE/BIN que falhava.
 
@@ -41,7 +41,7 @@ A interface mostra os controles que o navegador reporta via Gamepad API. Para PS
 
 ## Hospedagem
 
-GitHub Pages hospeda os arquivos estáticos. ROMs e saves não são enviados pelo fluxo de deploy. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem. Seleção de ROM é iniciada pelo usuário em cada aparelho e limitada aos arquivos escolhidos no seletor nativo.
+GitHub Pages hospeda os arquivos estáticos; não recebe ROMs por deploy. O usuário pode escolher um arquivo do aparelho ou autorizar o Picker para um arquivo do Drive. No caso do Drive, os bytes são transferidos da Google API para a memória da aba, sem persistência no aparelho e sem passar por um servidor do projeto. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem.
 
 ## Gamepad e iOS
 
@@ -49,7 +49,7 @@ A interface mostra os controles que o navegador reporta via Gamepad API. Ausênc
 
 ## Hospedagem
 
-GitHub Pages hospeda os arquivos estáticos. ROMs e saves não são enviados pelo fluxo de deploy. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem. Seleção de ROM é iniciada pelo usuário em cada aparelho e limitada aos arquivos escolhidos no seletor nativo.
+GitHub Pages hospeda os arquivos estáticos; não recebe ROMs por deploy. O usuário pode escolher um arquivo do aparelho ou autorizar o Picker para um arquivo do Drive. No caso do Drive, os bytes são transferidos da Google API para a memória da aba, sem persistência no aparelho e sem passar por um servidor do projeto. O emulador roda localmente no navegador; não é streaming de uma máquina na nuvem.
 
 ## PS1: entrada direta e controles de toque
 

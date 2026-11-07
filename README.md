@@ -6,9 +6,9 @@ Projeto de emulação retrô para navegador, com interface em português e seis 
 
 ## Princípios
 
-- O jogo é escolhido no dispositivo do usuário; não há catálogo de ROMs nem envio de arquivos nesta versão.
-- GBC/GBA/PS1 carregam loader/core da CDN oficial EmulatorJS; a primeira execução exige internet. A ROM escolhida permanece no aparelho e não é enviada.
-- O autosave local SRAM está ligado em intervalo de 30 segundos. A barra do motor oferece controles de pausa/reinício, mapeamento de controles, tela cheia, save/load state e SRAM. Os recursos de save ainda precisam de validação ponta a ponta. Google Drive não está implementado.
+- O jogo pode ser escolhido no aparelho ou selecionado no Google Drive depois de configurar um projeto Google Cloud; não há catálogo de ROMs nem envio de arquivos pelo app.
+- GBC/GBA/PS1 carregam loader/core da CDN oficial EmulatorJS; a primeira execução exige internet. ROMs locais não são enviadas; ROMs do Drive são lidas temporariamente em memória na sessão, sem gravação no aparelho.
+- O autosave local SRAM está ligado em intervalo de 30 segundos. A barra do motor oferece controles de pausa/reinício, mapeamento de controles, tela cheia, save/load state e SRAM. Os recursos de save ainda precisam de validação ponta a ponta.
 - Não distribuímos jogos, BIOS proprietárias ou links para cópias não autorizadas. Para PS1, o núcleo aceita BIOS própria opcional; sem ela pode recorrer ao HLE, com compatibilidade menor.
 - Chrome, Edge, Firefox, Android e iOS serão alvos de teste; esta etapa ainda não garante compatibilidade em qualquer aparelho. No iOS, o Safari é o motor de navegador subjacente mesmo para outros navegadores.
 
@@ -30,11 +30,12 @@ Abra `http://localhost:8000`. Em produção, publique por HTTPS (por exemplo, Gi
 - [Decisões técnicas e pesquisa](docs/DECISIONS.md)
 - [Compatibilidade e limites](docs/COMPATIBILITY.md)
 - [Progresso, sucessos e falhas](docs/PROGRESS.md)
+- [Configurar Google Drive](docs/GOOGLE_DRIVE.md)
 - [Avisos de terceiros](THIRD_PARTY_NOTICES.md)
 
 ## Próxima etapa
 
-O próximo passo é testar PS1 com imagem e BIOS próprias, confirmar o boot e validar controles, áudio e cartão de memória no navegador/aparelho desejado. Consulte [progresso e limitações](docs/PROGRESS.md).
+O próximo passo é configurar e validar o acesso Google Drive com credenciais próprias, testando GBC/GBA e conjuntos CUE/BIN PS1 no navegador/aparelho desejado. Consulte [guia Google Drive](docs/GOOGLE_DRIVE.md) e [progresso e limitações](docs/PROGRESS.md).
 
 ## Acessar pela nuvem
 
@@ -42,7 +43,7 @@ O GitHub Pages está publicado. Acesse:
 
 `https://eubrunsllva-sudo.github.io/Retro-arower-arcade/`
 
-O workflow em `.github/workflows/pages.yml` publica automaticamente cada atualização da branch `main`. O site é servido por HTTPS. No celular, abra a URL e selecione uma ROM armazenada naquele aparelho. O navegador não permite que o site leia pastas inteiras livremente: é necessário escolher os arquivos; no iOS, use Safari ou navegador compatível e confirme a seleção no seletor do sistema. O jogo não é transmitido da nuvem: a emulação acontece localmente no navegador e a ROM não é enviada.
+O workflow em `.github/workflows/pages.yml` publica automaticamente cada atualização da branch `main`. O site é servido por HTTPS. No celular, abra a URL e escolha uma ROM local ou no botão Google Drive. O seletor do aparelho só entrega os arquivos explicitamente escolhidos. Para o Drive, configure as credenciais seguindo [o guia](docs/GOOGLE_DRIVE.md). A ROM selecionada é transferida temporariamente para a memória da aba para que o núcleo WebAssembly a leia; ela não é salva no aparelho nem enviada pelo app.
 
 ### Controles
 

@@ -4,7 +4,7 @@
 
 - **EmulatorJS 4.2.3**, licença GPL-3.0: loader e dados carregados em tempo de execução de `https://cdn.emulatorjs.org/4.2.3/data/`. Este repositório não contém código, WASM, core, ROM ou BIOS do EmulatorJS.
 - Cores selecionados: Gambatte para GB/GBC, mGBA para GBA e PCSX-ReARMed para PS1 (`psx`). A documentação Libretro lista PCSX-ReARMed sob GPL-2.0. Os cores são carregados da CDN do EmulatorJS, não incluídos neste repositório. Antes de espelhar/distribuir artefatos, revisar a licença e a fonte correspondente de cada core/dependência.
-- A aplicação contém apenas a integração/configuração própria. Google Fonts continua carregado remotamente no CSS.
+- A aplicação contém apenas a integração/configuração própria. Google Fonts continua carregado remotamente no CSS. O acesso opcional ao Drive carrega Google Identity Services e Google API/Picker JavaScript das origens oficiais do Google em tempo de execução; este repositório não inclui cópia dessas bibliotecas.
 - Não há jogos, BIOS ou firmware incluídos. Não distribuímos dumps proprietários; BIOS real de PS1 deve ser fornecida pelo próprio usuário, se ele tiver direito de uso. Sem ela, PCSX-ReARMed pode recorrer a HLE, com compatibilidade variável. Ver [guia Libretro de BIOS](https://docs.libretro.com/guides/bios/) e [formatos de imagem de disco](https://docs.libretro.com/guides/disc-images/).
 
 ## Candidatos pesquisados (não incorporados)
