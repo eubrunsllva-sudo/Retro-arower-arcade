@@ -1,5 +1,12 @@
 # Registro de progresso
 
+## 2026-11-07 — Evitar JavaScript antigo em cache
+
+- O arquivo publicado em `main` contém pastas habilitadas e locale `pt-BR`, mas a captura ainda mostrava o seletor anterior em inglês.
+- Causa provável: `index.html` continuava requisitando os scripts com a mesma query de versão. Navegadores podiam reutilizar uma cópia antiga em cache.
+- Correção nesta branch: atualizar as URLs versionadas de `google-drive.js` e `app.js` para forçar uma nova requisição após o deploy.
+- Estado: aguardando PR/mesclagem, deploy e confirmação visual no navegador.
+
 ## 2026-11-07 — Navegação de pastas do Google Drive
 
 - Causa encontrada: a configuração do Google Picker ocultava pastas (`setIncludeFolders(false)`), impedindo navegar pela estrutura do Drive e chegar a diretórios como `ROOM GAMES/ps1`.
