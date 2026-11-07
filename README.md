@@ -6,8 +6,8 @@ Projeto de emulação retrô para navegador, com interface em português e seis 
 
 ## Princípios
 
-- O jogo pode ser escolhido no aparelho ou selecionado no Google Drive depois de configurar um projeto Google Cloud; não há catálogo de ROMs nem envio de arquivos pelo app.
-- GBC/GBA/PS1 carregam loader/core da CDN oficial EmulatorJS; a primeira execução exige internet. ROMs locais não são enviadas; ROMs do Drive são lidas temporariamente em memória na sessão, sem gravação no aparelho.
+- O jogo pode ser escolhido no aparelho ou, após configurar credenciais próprias, selecionado no Google Drive. A autorização usa GIS Authorization Code com função Cloudflare Pages e escopo drive.file; não há catálogo de ROMs.
+- GBC/GBA/PS1 carregam loader/core da CDN oficial EmulatorJS; a primeira execução exige internet. ROMs locais não são enviadas; as do Drive passam temporariamente pela memória do navegador. O Client Secret fica somente como segredo no Cloudflare, e tokens não são persistidos.
 - O autosave local SRAM está ligado em intervalo de 30 segundos. A barra do motor oferece controles de pausa/reinício, mapeamento de controles, tela cheia, save/load state e SRAM. Os recursos de save ainda precisam de validação ponta a ponta.
 - Não distribuímos jogos, BIOS proprietárias ou links para cópias não autorizadas. Para PS1, o núcleo aceita BIOS própria opcional; sem ela pode recorrer ao HLE, com compatibilidade menor.
 - Chrome, Edge, Firefox, Android e iOS serão alvos de teste; esta etapa ainda não garante compatibilidade em qualquer aparelho. No iOS, o Safari é o motor de navegador subjacente mesmo para outros navegadores.
@@ -15,14 +15,14 @@ Projeto de emulação retrô para navegador, com interface em português e seis 
 ## Rodar localmente
 
 Como esta etapa usa apenas HTML, CSS e JavaScript, não há dependências npm.
-Abra pelo servidor local indicado abaixo (ou pelo GitHub Pages); não dê duplo clique em `index.html`. O motor WebAssembly depende de uma origem web segura/servida. A interface mostrará se o JavaScript do app não iniciou.
+Abra pelo servidor local indicado abaixo; não dê duplo clique em `index.html`. O motor WebAssembly depende de uma origem web segura/servida. O acesso ao Drive usa as funções do Cloudflare Pages e não funciona no servidor HTTP estático simples.
 
 ```powershell
 cd outputs/retro-browser
 python -m http.server 8000
 ```
 
-Abra `http://localhost:8000`. Em produção, publique por HTTPS (por exemplo, GitHub Pages). Alguns recursos de navegador e os próximos núcleos exigem contexto seguro.
+Abra `http://localhost:8000` para testar a emulação local. Para testar Drive em desenvolvimento, use Cloudflare Pages Preview com as variáveis de ambiente configuradas. A produção atual está hospedada em `https://retroarcade.xyz.br`.
 
 ## Documentação
 
@@ -33,9 +33,9 @@ Abra `http://localhost:8000`. Em produção, publique por HTTPS (por exemplo, Gi
 - [Configurar Google Drive](docs/GOOGLE_DRIVE.md)
 - [Avisos de terceiros](THIRD_PARTY_NOTICES.md)
 
-## Próxima etapa
+## Estado da integração Google Drive
 
-O próximo passo é configurar e validar o acesso Google Drive com credenciais próprias, testando GBC/GBA e conjuntos CUE/BIN PS1 no navegador/aparelho desejado. Consulte [guia Google Drive](docs/GOOGLE_DRIVE.md) e [progresso e limitações](docs/PROGRESS.md).
+O fluxo OAuth seguro está na branch `feature/google-drive-secure-login`. As variáveis de produção foram cadastradas no Cloudflare Pages; ainda falta integrar a branch em `main`, publicar a versão resultante e validar login, seleção e leitura de uma ROM real. Consulte [guia Google Drive](docs/GOOGLE_DRIVE.md) e [progresso e limitações](docs/PROGRESS.md).
 
 ## Acessar pela nuvem
 
@@ -43,9 +43,9 @@ O site de produção está hospedado no Cloudflare Pages:
 
 https://retroarcade.xyz.br
 
-A publicação automática pelo GitHub Pages foi removida. O deployment antigo ainda precisa ser despublicado em **Repository → Settings → Pages → Unpublish site**; isso remove somente a publicação, preservando o repositório e o código-fonte.
+A publicação automática pelo GitHub Pages foi removida. O deployment antigo ainda pode ser despublicado em **Repository → Settings → Pages → Unpublish site**; isso remove somente a publicação, preservando o repositório e o código-fonte.
 
-
+A ROM do Drive é lida da API Google para a memória da aba; o site não guarda a ROM no aparelho nem envia o arquivo para o servidor do projeto.
 ### Controles
 
 A página inclui um diagnóstico pela Gamepad API. Conecte o controle antes ou depois de abrir o site e toque em **Verificar controle**. No PS1, a integração normaliza os índices dos controles ativos antes de carregar EmulatorJS 4.2.3 (contorno para falha de polling da versão) e envia um mapa padrão. Se algum botão não corresponder, abra Configurações → Controles no emulador e remapeie. O diagnóstico mostra quantos botões estão pressionados naquele instante. Se o iPega não aparecer, o navegador não o reportou como gamepad. No iOS, suporte depende da versão do sistema, navegador e perfil Bluetooth do controle; o controle virtual é alternativa para toque.
