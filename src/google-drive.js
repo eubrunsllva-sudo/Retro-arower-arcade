@@ -9,6 +9,8 @@
   let accessTokenExpiresAt = 0;
   let librariesPromise = null;
   let pickerReady = false;
+  let temporaryDirectoryPromise = null;
+  const temporaryDirectoryName = 'retro-drive-' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
 
   async function loadConfig() {
     if (config?.configured) return config;
@@ -158,34 +160,70 @@
       accessTokenExpiresAt = 0;
       throw new Error('A autorização expirou. Toque novamente em “Escolher ROM no Google Drive” e conecte a conta.');
     }
-    const url = `${DRIVE_FILES_URL}${encodeURIComponent(doc.id)}?alt=media&supportsAllDrives=true`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (response.status === 401) {
-      accessToken = '';
-      accessTokenExpiresAt = 0;
-      throw new Error('A autorização do Google expirou. Toque novamente em “Escolher ROM no Google Drive” e autorize a conta.');
+    if (!navigator.storage?.getDirectory || typeof ReadableStream === 'undefined') {
+      throw new Error('Este navegador não oferece armazenamento temporário em fluxo. Atualize o navegador ou abra a ROM localmente; o download em memória foi desativado para evitar que a aba reinicie.');
     }
-    if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
-    if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
-    const total = Number(response.headers.get('Content-Length')) || Number(doc.sizeBytes) || 0;
-    if (!response.body?.getReader) {
-      const blob = await response.blob();
-      if (!blob.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-      onProgress(blob.size, total || blob.size);
-      return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
+    if (!temporaryDirectoryPromise) {
+      temporaryDirectoryPromise = navigator.storage.getDirectory()
+        .then((root) => root.getDirectoryHandle(temporaryDirectoryName, { create: true }))
+        .catch((error) => {
+          temporaryDirectoryPromise = null;
+          if (error?.name === 'QuotaExceededError') throw new Error('Não há espaço temporário disponível no navegador para esta ROM. Libere espaço no aparelho ou selecione um arquivo menor.');
+          throw new Error(`O navegador não conseguiu criar o arquivo temporário da ROM: ${error?.message || 'armazenamento indisponível'}.`);
+        });
     }
-    const reader = response.body.getReader();
-    const chunks = [];
-    let loaded = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      loaded += value.byteLength;
-      onProgress(loaded, total);
+    const sessionDirectory = await temporaryDirectoryPromise;
+    const cleanName = String(doc.name || 'rom.bin').replace(/[\/\\\0]/g, '_').replace(/^\.+/, '_') || 'rom.bin';
+    const fileDirectory = await sessionDirectory.getDirectoryHandle(crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`, { create: true });
+    let writer;
+    let reader;
+    try {
+      const response = await fetch(`${DRIVE_FILES_URL}${encodeURIComponent(doc.id)}?alt=media&supportsAllDrives=true`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      });
+      if (response.status === 401) {
+        accessToken = '';
+        accessTokenExpiresAt = 0;
+        throw new Error('A autorização do Google expirou. Toque novamente em “Escolher ROM no Google Drive” e autorize a conta.');
+      }
+      if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
+      if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
+      if (!response.body?.getReader) throw new Error('O navegador não disponibilizou a transferência em fluxo. Atualize o navegador e tente novamente.');
+      const total = Number(response.headers.get('content-length')) || Number(doc.sizeBytes) || 0;
+      const fileHandle = await fileDirectory.getFileHandle(cleanName, { create: true });
+      writer = await fileHandle.createWritable();
+      reader = response.body.getReader();
+      let loaded = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await writer.write(value);
+        loaded += value.byteLength;
+        onProgress(loaded, total);
+      }
+      await writer.close();
+      if (!loaded) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
+      const file = await fileHandle.getFile();
+      onProgress(loaded, total || loaded);
+      return file;
+    } catch (error) {
+      try { await reader?.cancel(); } catch { /* transferência já encerrada */ }
+      try { await writer?.abort(); } catch { /* arquivo parcial será removido abaixo */ }
+      try { await sessionDirectory.removeEntry(fileDirectory.name, { recursive: true }); } catch { /* limpeza best effort */ }
+      if (error?.name === 'QuotaExceededError') throw new Error('O navegador ficou sem espaço temporário durante o download. Libere espaço no aparelho e tente novamente.');
+      if (error instanceof TypeError) throw new Error(`Falha de rede ao baixar “${doc.name}” do Google Drive. Verifique a conexão e tente novamente.`);
+      throw error;
     }
-    if (!loaded) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-    return new File(chunks, doc.name, { type: doc.mimeType || response.headers.get('Content-Type') || 'application/octet-stream', lastModified: Date.now() });
+  }
+
+  async function clearTemporaryFiles() {
+    if (!temporaryDirectoryPromise) return;
+    try {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry(temporaryDirectoryName, { recursive: true });
+      temporaryDirectoryPromise = null;
+    } catch { /* limpeza best effort ao encerrar a aba */ }
   }
 
   function disconnect() {
@@ -197,5 +235,5 @@
     }
   }
 
-  window.RetroGoogleDrive = { loadConfig, warmup, pickFiles, readFile, disconnect };
+  window.RetroGoogleDrive = { loadConfig, warmup, pickFiles, readFile, disconnect, clearTemporaryFiles };
 })();
