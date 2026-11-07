@@ -1,5 +1,12 @@
 # Registro de progresso
 
+## 2026-11-07 — Navegação de pastas do Google Drive
+
+- Causa encontrada: a configuração do Google Picker ocultava pastas (`setIncludeFolders(false)`), impedindo navegar pela estrutura do Drive e chegar a diretórios como `ROOM GAMES/ps1`.
+- Correção nesta branch: pastas passam a aparecer e ser navegáveis; continuam sem poder ser escolhidas como arquivo. O Picker foi configurado para português do Brasil.
+- Limitação: o Google controla o visual e a interface do Picker; ele não pode ser convertido na página completa do Drive. Depois do deploy, confirmar que as pastas aparecem e abrir uma ROM dentro de uma pasta.
+- Estado: alteração de código feita; publicação e validação no site ainda pendentes.
+
 ## 2026-11-06 — Etapa 1: base web
 
 ### Feito

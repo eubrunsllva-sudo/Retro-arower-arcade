@@ -2,6 +2,10 @@
 
 ## Como o fluxo funciona
 
+### Navegação no seletor
+
+O seletor oficial do Google agora exibe pastas e permite abri-las para navegar até as ROMs, em português do Brasil. Pastas não podem ser escolhidas como se fossem ROMs: selecione os arquivos de jogo dentro delas. A janela e o visual do seletor são fornecidos pelo Google; o aplicativo não consegue transformá-los na interface completa do Google Drive. Arquivos que o seletor lista podem incluir saves e outros formatos; escolha uma ROM compatível com o console selecionado.
+
 1. A pessoa toca em **Escolher ROM no Google Drive**.
 2. O Google abre a janela oficial para escolher a conta e autorizar acesso.
 3. O app solicita somente o escopo https://www.googleapis.com/auth/drive.file, recomendado pelo Google para acesso por arquivo. O seletor oficial entrega ao app somente os arquivos escolhidos.

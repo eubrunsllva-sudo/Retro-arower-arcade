@@ -72,13 +72,14 @@
   function showPicker(resolve, reject, onStatus) {
     try {
       const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
-        .setIncludeFolders(false)
+        .setIncludeFolders(true)
         .setSelectFolderEnabled(false);
       const picker = new window.google.picker.PickerBuilder()
         .setAppId(config.projectNumber)
         .setDeveloperKey(config.apiKey)
         .setOAuthToken(accessToken)
         .setOrigin(window.location.origin)
+        .setLocale('pt-BR')
         .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
         .addView(view)
         .setCallback((data) => {
