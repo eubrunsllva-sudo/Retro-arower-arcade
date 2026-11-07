@@ -396,12 +396,15 @@ function sendTouchInput(index, value) {
 }
 // Route standard browser gamepads directly into the core as a fallback for
 // EmulatorJS profiles that detect a controller but leave Port 1 unmapped.
+function isInteractiveEmulatorTarget(target) {
+  return Boolean(target?.closest('button, a, input, select, textarea, [role="button"], [role="dialog"], .ejs_menu_bar, .ejs_popup_box, .ejs_settings_parent, [class*="popup"], [class*="modal"], [class*="dialog"], [class*="exit"], .ejs_virtualGamepad_open, #touch-settings-toggle, #toggle-fullscreen'));
+}
 function guardMobileEmulatorMenu(mount) {
   if (mount.dataset.mobileMenuGuard === 'installed') return;
   mount.dataset.mobileMenuGuard = 'installed';
   mount.addEventListener('touchstart', (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest('.ejs_virtualGamepad_parent, .ejs_virtualGamepad_open, .ejs_menu_bar, #touch-settings-toggle')) return;
+    if (isInteractiveEmulatorTarget(target) || target?.closest('.ejs_virtualGamepad_parent')) return;
     if (event.cancelable) event.preventDefault();
   }, { passive: false });
   const guardEmptyPadZones = () => {
@@ -410,13 +413,25 @@ function guardMobileEmulatorMenu(mount) {
       zone.dataset.touchMenuGuard = 'installed';
       zone.addEventListener('touchstart', (event) => {
         const target = event.target instanceof Element ? event.target : null;
-        if (target?.closest('.ejs_virtualGamepad_open')) return;
+        if (isInteractiveEmulatorTarget(target)) return;
         if (event.cancelable) event.preventDefault();
       }, { passive: false });
     }
   };
   guardEmptyPadZones();
   new MutationObserver(guardEmptyPadZones).observe(mount, { childList: true, subtree: true });
+}
+
+function handleEmulatorExit() {
+  running = false;
+  if (gamepadBridgeFrame) cancelAnimationFrame(gamepadBridgeFrame);
+  gamepadBridgeFrame = 0;
+  releaseGamepadBridgeInputs();
+  releaseGameObjectUrl();
+  releaseExternalObjectUrls();
+  document.querySelector('#player-status').textContent = 'Emulador encerrado.';
+  if (document.body.classList.contains('game-fullscreen')) void exitGameFullscreen();
+  player.hidden = true;
 }
 
 function startGamepadBridge(system) {
@@ -1071,6 +1086,8 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
     },
     EJS_ready: () => {
       status.textContent = `EmulatorJS ${EJS_VERSION} inicializado (${coreNames[system.core]}).`;
+      const emulator = window.EJS_emulator;
+      if (typeof emulator?.on === 'function') emulator.on('exit', handleEmulatorExit);
       logPs1Diagnostic('EmulatorJS pronto', { core: system.core, gameName: file.name, externalPaths: Object.keys(runtimeExternalFiles) });
     },
     EJS_onGameStart: () => {

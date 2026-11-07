@@ -246,3 +246,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Complementada a regra anterior com seletores dos grupos superior e inferior do gamepad do EmulatorJS, onde Select, Start, Rápido e Lento são renderizados separadamente dos botões de ação.
 - Texto responsivo, centralizado e contido no botão; cores, família tipográfica e transparência mantidas. A regra é restrita às sessões GBC/GBA.
 - Cache JS/CSS atualizado. Verificações: `node --check src/app.js` e `git diff --check`.
+
+## 2026-11-06 — Saída do jogo e tela cheia
+
+- Diagnóstico: a proteção de toque do GBA/GBC interceptava cliques em componentes da interface do EmulatorJS, incluindo controles de confirmação e o botão de tela cheia. O rótulo expandido de mostrar/ocultar controles também podia ocupar a área clicável do botão Sair.
+- A proteção agora preserva botões, diálogos e controles da barra e atua apenas no canvas/espaços vazios do gamepad. O atalho GBA/GBC fica compacto em tela cheia.
+- Ao receber o evento oficial `exit` do EmulatorJS, o app encerra a sessão, libera recursos locais e sai da tela cheia. Aplicável a GBA, GBC e PS1.
+- Verificações locais: `node --check src/app.js` e `git diff --check`. O teste de toque ainda depende do navegador móvel do usuário.
+- Referências: [opções oficiais do EmulatorJS (`EJS_askBeforeExit`)](https://emulatorjs.org/docs/options/) e [eventos da API EmulatorJS](https://deepwiki.com/EmulatorJS/EmulatorJS/8-api-reference).
