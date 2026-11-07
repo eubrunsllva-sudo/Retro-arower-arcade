@@ -254,3 +254,12 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Ao receber o evento oficial `exit` do EmulatorJS, o app encerra a sessão, libera recursos locais e sai da tela cheia. Aplicável a GBA, GBC e PS1.
 - Verificações locais: `node --check src/app.js` e `git diff --check`. O teste de toque ainda depende do navegador móvel do usuário.
 - Referências: [opções oficiais do EmulatorJS (`EJS_askBeforeExit`)](https://emulatorjs.org/docs/options/) e [eventos da API EmulatorJS](https://deepwiki.com/EmulatorJS/EmulatorJS/8-api-reference).
+
+## 2026-11-06 — Integração opcional com Google Drive (branch `feature/google-drive-roms`)
+
+- Criada branch separada antes das alterações; `main` permanece intacta.
+- Adicionado botão do Google Drive, configuração local de Client ID / API key / Project number, carregamento oficial do Google Identity Services e Picker com seleção múltipla.
+- O app usa o escopo `drive.file` e lê somente arquivos escolhidos pelo usuário com Drive API `files.get?alt=media`. O token fica em memória; as ROMs viram objetos File temporários na aba e seguem a mesma validação GBC/GBA/PS1 já existente, incluindo CUE/BIN/M3U.
+- Nenhuma ROM ou token é gravado no aparelho ou enviado ao backend do projeto. A ROM ainda trafega pela rede e usa memória durante a sessão; a emulação permanece no dispositivo e arquivos grandes podem exceder os limites de memória do navegador.
+- Documentado o setup do Google Cloud em `docs/GOOGLE_DRIVE.md`, incluindo restrições da API key, origem GitHub Pages e `localhost`.
+- Limite de verificação: os IDs/credenciais Google do proprietário ainda não foram configurados; portanto, a autorização real e a seleção do Picker precisam de validação na branch com o projeto Cloud do usuário.

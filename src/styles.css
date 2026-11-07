@@ -134,3 +134,16 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 #game-screen.ps1-toolbar-open .ejs_menu_bar{opacity:1!important;pointer-events:auto!important;transform:translateY(0)!important}
 #game-screen.ps1-toolbar-closed .ejs_small_screen .ejs_menu_bar{transform:translate(-50%,100%)!important}
 #game-screen.ps1-toolbar-open .ejs_small_screen .ejs_menu_bar{transform:translate(-50%,0)!important}
+
+/* Google Drive access setup; ROMs stay session-only in memory. */
+.drive-picker-button{min-height:42px;cursor:pointer}
+.drive-setup{display:grid;gap:10px;max-width:490px;margin:12px 0 14px;padding:14px;border:1px solid #48483d;background:#191916}
+.drive-setup[hidden]{display:none!important}
+.drive-setup summary{cursor:pointer;font:9px var(--mono);letter-spacing:.7px;color:var(--lime)}
+.drive-setup p{margin:0;color:#aaa99f;font:9px/1.5 var(--mono)}
+.drive-setup label{display:grid;gap:6px;color:#aaa99f;font:8px var(--mono)}
+.drive-setup input{width:100%;min-height:38px;padding:8px;background:#11110f;color:var(--text);border:1px solid #4d4d43;font:10px var(--mono)}
+.drive-setup>div{display:flex;flex-wrap:wrap;gap:8px}
+.drive-setup button{min-height:36px}
+#google-drive-status{color:var(--lime)}
+@media(max-width:760px){.drive-picker-button{width:100%;min-height:42px}.drive-setup{padding:12px}}
