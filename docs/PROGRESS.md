@@ -235,3 +235,8 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - PS1 não foi alterado por esta correção. CSS e JavaScript receberam identificador novo de cache.
 - Verificação solicitada: checagem de sintaxe JS e whitespace; validação de controles físicos no iPhone depende do dispositivo.
 - Referências do diagnóstico: [documentação oficial de opções EmulatorJS](https://emulatorjs.org/docs/options/) e [issue EmulatorJS sobre vazamento de toque da área vazia do gamepad](https://github.com/EmulatorJS/EmulatorJS/issues/1221).
+## 2026-11-06 — Rótulos dos botões GBC/GBA
+
+- Os rótulos longos dos controles virtuais de GBC/GBA agora usam tamanho de texto responsivo, centralização e limite interno para caber dentro dos próprios botões. Família tipográfica, cor e transparência continuam as mesmas.
+- Regras limitadas à sessão de GBC/GBA; PS1 permanece inalterado. Cache JS/CSS atualizado.
+- Validação: `node --check src/app.js` e `git diff --check`.

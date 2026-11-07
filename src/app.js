@@ -1004,6 +1004,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
   releaseGamepadBridgeInputs();
   player.hidden = false;
   activeSystemId = system.id;
+  document.querySelector('#game-screen').classList.toggle('gameboy-touch-controls', ['gb', 'gba'].includes(system.id));
   touchSettings.hidden = system.id !== 'ps1';
   touchSettings.open = false;
   touchSettingsToggle.hidden = false;
