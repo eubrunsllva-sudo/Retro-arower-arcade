@@ -227,3 +227,11 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Migração: o layout único antigo é preservado como paisagem; retrato começa com um posicionamento clássico dentro dos limites da tela. Alterações futuras em cada orientação são persistidas separadamente.
 - GBC/GBA continuam usando os controles virtuais do EmulatorJS; tamanhos e margens recebem regras responsivas para retrato/paisagem.
 - Cache dos arquivos JS/CSS renovado. `node --check src/app.js` e `git diff --check` passaram; interação real ainda precisa de confirmação no celular.
+
+## 2026-11-06 — Correção de controles de toque GBC/GBA
+
+- A opção mostrar/ocultar agora aplica estado explícito ao contêiner do EmulatorJS; quando mostrar estiver ativo, controles virtuais são forçados visíveis mesmo se o core os deixar ocultos por estilo interno.
+- Em GBC/GBA, toques no canvas deixam de gerar eventos sintéticos que abriam a barra do emulador. As áreas vazias dos controles recebem proteção contra o menu acidental sem bloquear os listeners dos botões; o ícone nativo de abrir controles é preservado.
+- PS1 não foi alterado por esta correção. CSS e JavaScript receberam identificador novo de cache.
+- Verificação solicitada: checagem de sintaxe JS e whitespace; validação de controles físicos no iPhone depende do dispositivo.
+- Referências do diagnóstico: [documentação oficial de opções EmulatorJS](https://emulatorjs.org/docs/options/) e [issue EmulatorJS sobre vazamento de toque da área vazia do gamepad](https://github.com/EmulatorJS/EmulatorJS/issues/1221).

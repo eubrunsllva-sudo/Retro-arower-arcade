@@ -304,6 +304,7 @@ function updatePs1TouchVisibility(gamepadConnected = gamepadConnectedForTouch) {
   const touchDevice = matchMedia('(pointer: coarse)').matches || window.innerWidth <= 760;
   const visible = !gamepadConnectedForTouch && (touchVisibilityPreference === 'show' || (touchVisibilityPreference === 'auto' && touchDevice));
   mount.classList.toggle('virtual-controls-hidden', !visible || activeSystemId === 'ps1');
+  mount.classList.toggle('virtual-controls-forced-visible', visible && ['gb', 'gba'].includes(activeSystemId));
   root?.classList.toggle('controls-hidden', !visible);
   const label = visible ? 'OCULTAR CONTROLES' : 'MOSTRAR CONTROLES';
   touchVisibleButton.textContent = label;
@@ -395,6 +396,29 @@ function sendTouchInput(index, value) {
 }
 // Route standard browser gamepads directly into the core as a fallback for
 // EmulatorJS profiles that detect a controller but leave Port 1 unmapped.
+function guardMobileEmulatorMenu(mount) {
+  if (mount.dataset.mobileMenuGuard === 'installed') return;
+  mount.dataset.mobileMenuGuard = 'installed';
+  mount.addEventListener('touchstart', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('.ejs_virtualGamepad_parent, .ejs_virtualGamepad_open, .ejs_menu_bar, #touch-settings-toggle')) return;
+    if (event.cancelable) event.preventDefault();
+  }, { passive: false });
+  const guardEmptyPadZones = () => {
+    for (const zone of mount.querySelectorAll('.ejs_virtualGamepad_parent, .ejs_virtualGamepad_left, .ejs_virtualGamepad_right')) {
+      if (zone.dataset.touchMenuGuard === 'installed') continue;
+      zone.dataset.touchMenuGuard = 'installed';
+      zone.addEventListener('touchstart', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('.ejs_virtualGamepad_open')) return;
+        if (event.cancelable) event.preventDefault();
+      }, { passive: false });
+    }
+  };
+  guardEmptyPadZones();
+  new MutationObserver(guardEmptyPadZones).observe(mount, { childList: true, subtree: true });
+}
+
 function startGamepadBridge(system) {
   if (gamepadBridgeFrame) cancelAnimationFrame(gamepadBridgeFrame);
   gamepadBridgeInputs = new Map();
@@ -1077,6 +1101,7 @@ async function startGame(file, system, title = file.name, externalFiles = {}) {
       document.querySelector('#game-screen').appendChild(touchSettingsToggle);
       if (system.id === 'ps1') document.querySelector('#game-screen').appendChild(emulatorMenuToggle);
       touchSettingsToggle.textContent = system.id === 'ps1' ? '⚙' : (document.querySelector('#game-screen').classList.contains('virtual-controls-hidden') ? 'MOSTRAR CONTROLES' : 'OCULTAR CONTROLES');
+      if (system.id === 'gb' || system.id === 'gba') guardMobileEmulatorMenu(document.querySelector('#game-screen'));
       startGamepadBridge(system);
       if (gamepadIndexFix) status.textContent += ' · gamepad compatível ativo';
       requestAnimationFrame(resizeEmulatorViewport);

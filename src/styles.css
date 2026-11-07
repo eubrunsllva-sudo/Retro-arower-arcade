@@ -21,6 +21,9 @@ main{max-width:1180px;margin:auto;padding:0 32px}.hero{min-height:460px;display:
 .emulator-menu-toggle{position:absolute;z-index:20;right:50px;top:8px;width:34px;min-width:34px;min-height:30px;padding:0;border:1px solid #ffffff70;border-radius:16px;background:#111c;color:var(--lime);font:15px var(--sans);cursor:pointer;touch-action:manipulation}
 .emulator-menu-toggle[hidden]{display:none!important}
 #game-screen.virtual-controls-hidden .ejs_virtualGamepad_parent{display:none!important}
+#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:none!important;z-index:12!important}
+#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent .ejs_virtualGamepad_left,#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent .ejs_virtualGamepad_right,#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent .ejs_virtualGamepad_bottom{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent .ejs_virtualGamepad_left,#game-screen.virtual-controls-forced-visible .ejs_virtualGamepad_parent .ejs_virtualGamepad_right{touch-action:none}
 #game-screen.ps1-touch-controls-enabled .ejs_virtualGamepad_parent{display:none!important}
 .ps1-touch-controls .touch-edit-float,.ps1-touch-controls .touch-visibility-float{display:none!important}
 .ps1-touch-controls [data-touch-control]{z-index:6}
