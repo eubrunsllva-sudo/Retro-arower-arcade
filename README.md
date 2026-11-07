@@ -33,17 +33,17 @@ Abra `http://localhost:8000` para testar a emulação local. Para testar Drive e
 - [Configurar Google Drive](docs/GOOGLE_DRIVE.md)
 - [Avisos de terceiros](THIRD_PARTY_NOTICES.md)
 
-## Próxima etapa
+## Estado da integração Google Drive
 
-Uma branch experimental prepara o fluxo OAuth seguro do Google Drive. Ainda faltam credenciais do projeto Google Cloud, variáveis no Cloudflare e validação ponta a ponta. Consulte [guia Google Drive](docs/GOOGLE_DRIVE.md) e [progresso e limitações](docs/PROGRESS.md).
+O fluxo OAuth seguro está na branch `feature/google-drive-secure-login`. As variáveis de produção foram cadastradas no Cloudflare Pages; ainda falta integrar a branch em `main`, publicar a versão resultante e validar login, seleção e leitura de uma ROM real. Consulte [guia Google Drive](docs/GOOGLE_DRIVE.md) e [progresso e limitações](docs/PROGRESS.md).
 
 ## Acessar pela nuvem
 
-O site de produção está em:
+O site de produção está hospedado no Cloudflare Pages:
 
 https://retroarcade.xyz.br
 
-O Cloudflare Pages publica a branch de produção configurada no projeto. A integração de login do Google está em uma branch experimental até que as credenciais Cloudflare/Google sejam configuradas e o fluxo seja validado. O antigo GitHub Pages ainda precisa ser despublicado manualmente em **Repository → Settings → Pages → Unpublish site**; o código-fonte e o histórico do repositório permanecem no GitHub.
+A publicação automática pelo GitHub Pages foi removida. O deployment antigo ainda pode ser despublicado em **Repository → Settings → Pages → Unpublish site**; isso remove somente a publicação, preservando o repositório e o código-fonte.
 
 A ROM do Drive é lida da API Google para a memória da aba; o site não guarda a ROM no aparelho nem envia o arquivo para o servidor do projeto.
 ### Controles
