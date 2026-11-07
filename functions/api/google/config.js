@@ -9,7 +9,7 @@ export async function onRequestGet({ env }) {
   const configured = Boolean(
     env.GOOGLE_CLIENT_ID &&
     env.GOOGLE_API_KEY &&
-    /^\\d+$/.test(env.GOOGLE_PROJECT_NUMBER || "") &&
+    /^[0-9]+$/.test(env.GOOGLE_PROJECT_NUMBER || "") &&
     env.GOOGLE_CLIENT_SECRET
   );
 
