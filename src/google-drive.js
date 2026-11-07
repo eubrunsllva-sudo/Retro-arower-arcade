@@ -74,12 +74,15 @@
       const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false);
+      const pickerWidth = Math.max(566, Math.min(1051, window.innerWidth - 24));
+      const pickerHeight = Math.max(350, Math.min(650, window.innerHeight - 40));
       const picker = new window.google.picker.PickerBuilder()
         .setAppId(config.projectNumber)
         .setDeveloperKey(config.apiKey)
         .setOAuthToken(accessToken)
         .setOrigin(window.location.origin)
         .setLocale('pt-BR')
+        .setSize(pickerWidth, pickerHeight)
         .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
         .addView(view)
         .setCallback((data) => {
@@ -149,7 +152,7 @@
     });
   }
 
-  async function readFile(doc) {
+  async function readFile(doc, onProgress = () => {}) {
     if (!accessToken || Date.now() >= accessTokenExpiresAt) {
       accessToken = '';
       accessTokenExpiresAt = 0;
@@ -164,9 +167,25 @@
     }
     if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
     if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
-    const blob = await response.blob();
-    if (!blob.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-    return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
+    const total = Number(response.headers.get('Content-Length')) || Number(doc.sizeBytes) || 0;
+    if (!response.body?.getReader) {
+      const blob = await response.blob();
+      if (!blob.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
+      onProgress(blob.size, total || blob.size);
+      return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
+    }
+    const reader = response.body.getReader();
+    const chunks = [];
+    let loaded = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.byteLength;
+      onProgress(loaded, total);
+    }
+    if (!loaded) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
+    return new File(chunks, doc.name, { type: doc.mimeType || response.headers.get('Content-Type') || 'application/octet-stream', lastModified: Date.now() });
   }
 
   function disconnect() {

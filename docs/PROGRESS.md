@@ -1,5 +1,13 @@
 # Registro de progresso
 
+## 2026-11-07 — Google Drive no celular: estado da seleção e transferência
+
+- Causa do aviso confuso: uma mensagem de erro da tentativa anterior podia permanecer visível durante a transferência da nova ROM do Drive. Em ISOs grandes, a transferência pode demorar e dar a impressão de que a nova seleção falhou.
+- Ajuste: limpar o aviso anterior ao iniciar uma nova seleção; identificar formatos PS1 antes do download; mostrar bytes transferidos; só afirmar que a ROM está pronta quando a preparação concluir.
+- Seletor móvel: tamanho preferido agora acompanha a janela do navegador. O Google Picker tem largura mínima documentada de 566 px e escolhe quais colunas exibe; em retrato, pode ocultar proprietário/data. A aplicação não controla o conteúdo interno do seletor hospedado pelo Google.
+- Limite de desempenho: o jogo do Drive precisa ser transferido para a memória do aparelho antes da inicialização. ISOs grandes levam mais tempo, especialmente no celular; o progresso passa a ficar visível. O núcleo de emulação PS1 não foi alterado.
+- Estado: alteração local na branch `fix/google-picker-cache-bust`; publicação no domínio e confirmação no iPhone ainda pendentes.
+
 ## 2026-11-07 — Evitar JavaScript antigo em cache
 
 - O arquivo publicado em `main` contém pastas habilitadas e locale `pt-BR`, mas a captura ainda mostrava o seletor anterior em inglês.
