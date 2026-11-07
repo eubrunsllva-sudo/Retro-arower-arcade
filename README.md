@@ -39,11 +39,12 @@ O próximo passo é configurar e validar o acesso Google Drive com credenciais p
 
 ## Acessar pela nuvem
 
-O GitHub Pages está publicado. Acesse:
+O site de produção está hospedado no Cloudflare Pages:
 
-`https://eubrunsllva-sudo.github.io/Retro-arower-arcade/`
+https://retroarcade.xyz.br
 
-O workflow em `.github/workflows/pages.yml` publica automaticamente cada atualização da branch `main`. O site é servido por HTTPS. No celular, abra a URL e escolha uma ROM local ou no botão Google Drive. O seletor do aparelho só entrega os arquivos explicitamente escolhidos. Para o Drive, configure as credenciais seguindo [o guia](docs/GOOGLE_DRIVE.md). A ROM selecionada é transferida temporariamente para a memória da aba para que o núcleo WebAssembly a leia; ela não é salva no aparelho nem enviada pelo app.
+A publicação automática pelo GitHub Pages foi removida. O deployment antigo ainda precisa ser despublicado em **Repository → Settings → Pages → Unpublish site**; isso remove somente a publicação, preservando o repositório e o código-fonte.
+
 
 ### Controles
 
