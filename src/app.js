@@ -1,10 +1,8 @@
 const systems = [
   { id: 'gb', name: 'Game Boy Color', short: 'GBC', year: '1998', color: 'mint', extensions: ['.gb', '.gbc'], core: 'gb', active: true },
   { id: 'gba', name: 'Game Boy Advance', short: 'GBA', year: '2001', color: 'amber', extensions: ['.gba'], core: 'gba', active: true },
-  { id: 'n64', name: 'Nintendo 64', short: 'N64', year: '1996', color: 'blue', extensions: ['.n64', '.z64', '.v64'] },
   { id: 'ps1', name: 'PlayStation', short: 'PS1', year: '1994', color: 'violet', extensions: ['.chd', '.pbp', '.iso', '.cue', '.bin', '.m3u'], core: 'psx', active: true },
-  { id: 'dc', name: 'Dreamcast', short: 'DC', year: '1998', color: 'orange', extensions: ['.iso', '.bin', '.cdi', '.gdi', '.chd'] },
-  { id: 'psp', name: 'PlayStation Portable', short: 'PSP', year: '2004', color: 'pink', extensions: ['.iso', '.cso', '.pbp', '.chd'] },
+  { id: 'psp', name: 'PlayStation Portable', short: 'PSP', year: '2004', color: 'pink', extensions: ['.iso', '.cso', '.pbp', '.chd'], core: 'ppsspp', active: true },
 ];
 
 const EJS_VERSION = '4.2.3';
@@ -28,24 +26,31 @@ const ps1DiscStatus = document.querySelector('#ps1-disc-status');
 const drivePickerButton = document.querySelector('#google-drive-picker');
 const driveSetup = document.querySelector('#google-drive-setup');
 const driveStatus = document.querySelector('#google-drive-status');
-const driveClientIdInput = document.querySelector('#google-drive-client-id');
-const driveApiKeyInput = document.querySelector('#google-drive-api-key');
-const driveProjectNumberInput = document.querySelector('#google-drive-project-number');
-const driveSaveButton = document.querySelector('#google-drive-save');
 const driveDisconnectButton = document.querySelector('#google-drive-disconnect');
-const DRIVE_CONFIG_KEY = 'retro-arower-google-drive-config-v1';
 const driveMemoryFiles = new WeakSet();
 let driveConfig = null;
 let drivePickerWarmed = false;
-try {
-  driveConfig = JSON.parse(localStorage.getItem(DRIVE_CONFIG_KEY) || 'null');
-  if (driveConfig) {
-    driveClientIdInput.value = driveConfig.clientId || '';
-    driveApiKeyInput.value = driveConfig.apiKey || '';
-    driveProjectNumberInput.value = driveConfig.projectNumber || '';
-    window.RetroGoogleDrive?.configure(driveConfig);
-  }
-} catch { driveConfig = null; }
+if (window.RetroGoogleDrive?.loadConfig) {
+  window.RetroGoogleDrive.loadConfig().then(async (config) => {
+    driveConfig = config;
+    if (!config.configured) {
+      setGoogleDriveStatus('O login do Google ainda não está ativo. A configuração do site está sendo concluída.');
+      return;
+    }
+    setGoogleDriveStatus('Preparando o login seguro do Google…');
+    try {
+      await window.RetroGoogleDrive.warmup();
+      drivePickerWarmed = true;
+      setGoogleDriveStatus('Pronto. Toque em “Conectar ao Google Drive” para entrar e escolher sua ROM.');
+    } catch (error) {
+      setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível carregar o login do Google.');
+    }
+  }).catch((error) => {
+    setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google Drive.');
+  });
+} else {
+  setGoogleDriveStatus('O módulo Google Drive não carregou. Recarregue a página e tente novamente.');
+}
 let running = false;
 let pendingGame = null;
 let selectionSequence = 0;
@@ -57,7 +62,7 @@ let gamepadBridgeInputs = new Map();
 let activeSystemId = '';
 let ps1Candidates = [];
 let pendingSelectionSequence = 0;
-const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed' };
+const coreNames = { gb: 'Gambatte', gba: 'mGBA', psx: 'PCSX-ReARMed', ppsspp: 'PPSSPP' };
 // Explicit EmulatorJS defaults: each value2 is a RetroPad control name.
 // This makes the PS1 core's first-player pad usable without relying on a
 // previously saved controller profile in this browser.
@@ -595,47 +600,24 @@ biosInput.addEventListener('change', async () => {
 });
 
 function setGoogleDriveStatus(message) {
-  driveStatus.textContent = message;
+  if (driveStatus) driveStatus.textContent = message;
 }
-function driveConfigurationFromForm() {
-  return {
-    clientId: driveClientIdInput.value.trim(),
-    apiKey: driveApiKeyInput.value.trim(),
-    projectNumber: driveProjectNumberInput.value.trim(),
-  };
-}
-driveSaveButton.addEventListener('click', async () => {
-  const nextConfig = driveConfigurationFromForm();
-  if (!nextConfig.clientId || !nextConfig.apiKey || !/^\d+$/.test(nextConfig.projectNumber)) {
-    setGoogleDriveStatus('Preencha Client ID, chave de API e número do projeto Google Cloud.');
-    driveSetup.open = true;
-    return;
-  }
-  try { localStorage.setItem(DRIVE_CONFIG_KEY, JSON.stringify(nextConfig)); }
-  catch { setGoogleDriveStatus('O navegador não permitiu salvar as configurações. Verifique o modo privado ou o armazenamento do site.'); return; }
-  driveConfig = nextConfig;
-  drivePickerWarmed = false;
-  window.RetroGoogleDrive?.configure(driveConfig);
-  driveSaveButton.disabled = true;
-  setGoogleDriveStatus('Configuração salva neste navegador. Carregando os serviços Google…');
-  try {
-    if (!window.RetroGoogleDrive) throw new Error('O módulo do Google Drive não carregou. Recarregue a página e tente novamente.');
-    await window.RetroGoogleDrive.warmup();
-    drivePickerWarmed = true;
-    setGoogleDriveStatus('Pronto. Toque em “Escolher ROM no Google Drive” para autorizar e selecionar seus arquivos.');
-  } catch (error) {
-    setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível preparar o acesso ao Google Drive.');
-  } finally { driveSaveButton.disabled = false; }
-});
 driveDisconnectButton.addEventListener('click', () => {
   window.RetroGoogleDrive?.disconnect();
-  setGoogleDriveStatus('Sessão do Drive limpa neste navegador. A configuração permanece salva.');
+  setGoogleDriveStatus('Sessão do Google limpa neste navegador. Conecte novamente quando quiser.');
 });
 drivePickerButton.addEventListener('click', async () => {
-  if (!driveConfig?.clientId || !driveConfig?.apiKey || !/^\d+$/.test(driveConfig?.projectNumber || '')) {
+  if (!driveConfig) {
+    try { driveConfig = await window.RetroGoogleDrive?.loadConfig(); }
+    catch (error) {
+      driveSetup.open = true;
+      setGoogleDriveStatus(error instanceof Error ? error.message : 'Não foi possível verificar o acesso ao Google.');
+      return;
+    }
+  }
+  if (!driveConfig?.configured) {
     driveSetup.open = true;
-    setGoogleDriveStatus('Antes de acessar, configure o Client ID, a chave de API e o número do projeto Google Cloud.');
-    driveClientIdInput.focus();
+    setGoogleDriveStatus('O login do Google ainda está sendo configurado no site. Tente novamente quando estiver ativo.');
     return;
   }
   if (!window.RetroGoogleDrive) {
@@ -645,10 +627,10 @@ drivePickerButton.addEventListener('click', async () => {
   drivePickerButton.disabled = true;
   try {
     if (!drivePickerWarmed) {
-      setGoogleDriveStatus('Carregando as bibliotecas seguras do Google. Ao terminar, toque novamente no botão.');
+      setGoogleDriveStatus('Preparando o login seguro do Google. Ao terminar, toque novamente em “Conectar ao Google Drive”.');
       await window.RetroGoogleDrive.warmup();
       drivePickerWarmed = true;
-      setGoogleDriveStatus('Pronto para conectar. Toque novamente em “Escolher ROM no Google Drive”.');
+      setGoogleDriveStatus('Login pronto. Toque novamente em “Conectar ao Google Drive” para entrar e escolher sua ROM.');
       return;
     }
     const docs = await window.RetroGoogleDrive.pickFiles(setGoogleDriveStatus);

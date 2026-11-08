@@ -6,8 +6,9 @@
     <meta name="theme-color" content="#11110f" />
     <meta name="description" content="Uma biblioteca retrô que roda no navegador. Seus jogos ficam no seu aparelho." />
     <title>RETRO / browser arcade</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20261106-google-drive" />
-    <script src="./src/google-drive.js?v=20261106-google-drive" defer></script>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="stylesheet" href="./src/styles.css?v=20261107-secure-google-login" />
+    <script src="./src/google-drive.js?v=20261107-secure-google-login" defer></script>
     <script>
       window.addEventListener('error', (event) => {
         if (window.retroBrowserAppReady) return;
@@ -17,7 +18,7 @@
 
       const startApp = () => {
         const appScript = document.createElement('script');
-        appScript.src = './src/app.js?v=20261106-google-drive';
+        appScript.src = './src/app.js?v=20261107-secure-google-login';
         appScript.onerror = () => {
           const hint = document.getElementById('start-hint');
           if (hint) hint.textContent = 'Falha ao carregar src/app.js. Abra a pasta completa do projeto por um servidor local ou pelo GitHub Pages.';
@@ -66,7 +67,7 @@
           <div class="hero-actions">
             <label class="primary-button" for="game-file"><span class="button-plus">+</span> ESCOLHER ARQUIVOS DO JOGO <span class="button-arrow">↗</span></label>
             <label class="secondary-button folder-button" for="game-folder">ESCOLHER PASTA PS1</label>
-            <button class="secondary-button drive-picker-button" id="google-drive-picker" type="button">☁ &nbsp; ESCOLHER ROM NO GOOGLE DRIVE</button>
+            <button class="secondary-button drive-picker-button" id="google-drive-picker" type="button">☁ &nbsp; CONECTAR AO GOOGLE DRIVE</button>
             <button class="primary-button start-button" id="start-game" type="button" disabled>▶ &nbsp; INICIAR JOGO</button>
             <button class="secondary-button reload-button" id="reload-page" type="button">↻ &nbsp; RECARREGAR PÁGINA</button>
           </div>
@@ -75,13 +76,10 @@
           <p class="microcopy file-picker-hint">PS1: selecione o CUE e todas as faixas BIN juntas, ou use “Escolher pasta PS1”. Também aceita CHD/PBP/ISO individuais.</p>
           <p class="microcopy start-hint" id="start-hint">Escolha uma ROM compatível; depois o botão Iniciar jogo será habilitado.</p>
           <details class="drive-setup" id="google-drive-setup">
-            <summary>CONFIGURAR ACESSO AO GOOGLE DRIVE</summary>
-            <p>Use os identificadores públicos do seu projeto Google Cloud. Não informe senha nem Client Secret; a autorização acontece na janela oficial do Google.</p>
-            <label for="google-drive-client-id">CLIENT ID (APLICATIVO WEB)<input id="google-drive-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="...apps.googleusercontent.com" /></label>
-            <label for="google-drive-api-key">CHAVE DA API (RESTRITA)<input id="google-drive-api-key" type="text" autocomplete="off" spellcheck="false" placeholder="AIza…" /></label>
-            <label for="google-drive-project-number">NÚMERO DO PROJETO GOOGLE CLOUD<input id="google-drive-project-number" type="text" inputmode="numeric" autocomplete="off" placeholder="123456789012" /></label>
-            <div><button class="secondary-button" id="google-drive-save" type="button">SALVAR CONFIGURAÇÃO</button><button class="secondary-button" id="google-drive-disconnect" type="button">LIMPAR SESSÃO</button></div>
-            <p id="google-drive-status" role="status" aria-live="polite">Configure o projeto Google Cloud para começar. A ROM escolhida fica temporariamente na memória e não é salva no aparelho.</p>
+            <summary>ACESSO SEGURO AO GOOGLE DRIVE</summary>
+            <p>Toque em “Conectar ao Google Drive” para entrar na sua conta pela janela oficial do Google e escolher uma ROM. O site nunca recebe sua senha; só acessa os arquivos que você selecionar.</p>
+            <div><button class="secondary-button" id="google-drive-disconnect" type="button">LIMPAR SESSÃO DO GOOGLE</button></div>
+            <p id="google-drive-status" role="status" aria-live="polite">Verificando se o login do Google está pronto…</p>
           </details>
           <section class="selected-game" id="selected-game" aria-live="polite">
             <div class="selected-icon">▣</div><div class="selected-copy"><span class="eyebrow">JOGO SELECIONADO</span><strong id="selected-name">Nenhum jogo selecionado</strong><span id="selected-meta">GBC/GBA ou imagem única de PS1 (.chd, .pbp, .iso).</span><span id="selection-message">O nome aparecerá aqui após confirmar o arquivo na janela do sistema.</span></div><span class="selected-tag" id="selected-system">—</span>
@@ -114,7 +112,7 @@
       </section>
 
       <section class="library-section">
-        <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Seis mundos. <span>Uma tela.</span></h2></div><span class="section-note">GBC, GBA e PS1: núcleos em fase experimental.</span></div>
+        <div class="section-heading"><div><div class="eyebrow">01 — SUA ESTANTE</div><h2>Quatro mundos. <span>Uma tela.</span></h2></div><span class="section-note">GBC, GBA, PS1 e PSP: núcleos em fase experimental.</span></div>
         <div class="console-grid" id="console-grid" aria-label="Consoles planejados"></div>
       </section>
 
@@ -151,6 +149,6 @@
     </main>
 
     <footer><span>RETRO / BROWSER ARCADE <span class="footer-muted">· PROJETO ABERTO</span></span><a href="./docs/PROGRESS.md">ACOMPANHE O PROGRESSO ↗</a></footer>
-    <dialog id="about-dialog"><button class="dialog-close" id="close-dialog" aria-label="Fechar">×</button><div class="eyebrow">SOBRE O PROJETO</div><h2>Feito para jogar.<br /><span>Com transparência.</span></h2><p>GBC e GBA têm um núcleo experimental integrado. N64, Dreamcast, PS1 e PSP ainda estão planejados; a lista não garante que já funcionem.</p><p>O navegador só acessa arquivos que você escolher. Esta versão não envia ROMs, BIOS ou dados de jogo. O motor e seus dados são obtidos da CDN oficial, então jogar requer internet.</p><a href="./docs/DECISIONS.md">Ler decisões técnicas ↗</a></dialog>
+    <dialog id="about-dialog"><button class="dialog-close" id="close-dialog" aria-label="Fechar">×</button><div class="eyebrow">SOBRE O PROJETO</div><h2>Feito para jogar.<br /><span>Com transparência.</span></h2><p>GBC, GBA, PS1 e PSP possuem núcleos experimentais integrados. A execução perfeita depende do jogo e da capacidade do seu dispositivo.</p><p>O navegador só acessa arquivos que você escolher. Esta versão não envia ROMs, BIOS ou dados de jogo. O motor e seus dados são obtidos da CDN oficial, então jogar requer internet.</p><a href="./docs/DECISIONS.md">Ler decisões técnicas ↗</a></dialog>
   </body>
 </html>
