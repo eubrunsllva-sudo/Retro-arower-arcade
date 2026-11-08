@@ -625,6 +625,8 @@ drivePickerButton.addEventListener('click', async () => {
     return;
   }
   drivePickerButton.disabled = true;
+  notice.hidden = true;
+  document.querySelector('#selection-message').textContent = 'Aguardando a seleção no Google Drive…';
   try {
     if (!drivePickerWarmed) {
       setGoogleDriveStatus('Preparando o login seguro do Google. Ao terminar, toque novamente em “Conectar ao Google Drive”.');
@@ -639,19 +641,29 @@ drivePickerButton.addEventListener('click', async () => {
       const extension = extensionOf(doc.name || '');
       return systems.some((system) => system.active && system.extensions.includes(extension)) || extension === '.sbi';
     });
-    if (!supported.length) throw new Error('A seleção não contém ROM GBC/GBA ou arquivo PS1 compatível.');
+    if (!supported.length) {
+      const message = 'A seleção não contém ROM GBC/GBA ou arquivo PS1 compatível.';
+      setGoogleDriveStatus(message);
+      showSelectionError(message);
+      return;
+    }
     const skipped = docs.length - supported.length;
     const files = [];
     for (let index = 0; index < supported.length; index += 1) {
       const doc = supported[index];
-      setGoogleDriveStatus(`Lendo ${index + 1}/${supported.length}: ${doc.name} · temporariamente na memória desta sessão…`);
-      const file = await window.RetroGoogleDrive.readFile(doc);
+      const expectedBytes = Number(doc.sizeBytes) || 0;
+      const systemLabel = ['.iso', '.chd', '.pbp', '.cue', '.bin', '.m3u'].includes(extensionOf(doc.name || '')) ? 'PS1' : 'ROM';
+      setGoogleDriveStatus(`${systemLabel} reconhecido · baixando ${index + 1}/${supported.length}: ${doc.name}${expectedBytes ? ` (${formatBytes(expectedBytes)})` : ''}…`);
+      const file = await window.RetroGoogleDrive.readFile(doc, (loaded, total) => {
+        setGoogleDriveStatus(`Baixando ${doc.name}: ${formatBytes(loaded)}${total ? ` / ${formatBytes(total)}` : ''} · mantenha esta página aberta…`);
+      });
       driveMemoryFiles.add(file);
       files.push(file);
     }
     await handleSelectedFiles(files);
-    if (skipped) setGoogleDriveStatus(`${files.length} arquivo(s) lido(s); ${skipped} item(ns) sem formato compatível foram ignorados.`);
-    else setGoogleDriveStatus(`${files.length} arquivo(s) lido(s) temporariamente na memória. Nada foi salvo no aparelho.`);
+    if (pendingGame) setGoogleDriveStatus(`${pendingGame.title} pronta para iniciar. O arquivo está no armazenamento temporário do navegador nesta sessão.`);
+    else if (skipped) setGoogleDriveStatus(`${files.length} arquivo(s) lido(s); ${skipped} item(ns) sem formato compatível foram ignorados. Confira o aviso da seleção.`);
+    else setGoogleDriveStatus(`${files.length} arquivo(s) transferido(s). Confira o aviso da seleção para ver o próximo passo.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao ler a seleção do Google Drive.';
     setGoogleDriveStatus(message);
@@ -768,10 +780,10 @@ async function preparePs1Selection(files, sequence) {
   ps1DiscChooser.hidden = false;
   document.querySelector('#ps1-firmware').hidden = false;
   document.querySelector('#selected-name').textContent = `${candidates.length} jogos PS1 encontrados`;
-  document.querySelector('#selected-meta').textContent = `${files.length} arquivos selecionados · ${fromDrive ? 'Google Drive, temporários na memória' : 'permanecem neste dispositivo'}`;
+  document.querySelector('#selected-meta').textContent = `${files.length} arquivos selecionados · ${fromDrive ? 'Google Drive, armazenamento temporário do navegador' : 'permanecem neste dispositivo'}`;
   document.querySelector('#selected-system').textContent = 'PS1';
   document.querySelector('#selection-message').textContent = 'Escolha o título e toque em “Preparar este jogo”.';
-  document.querySelector('#start-hint').textContent = fromDrive ? 'As faixas serão reunidas temporariamente na memória para o core.' : 'As faixas serão empacotadas localmente para o core; nada é enviado.';
+  document.querySelector('#start-hint').textContent = fromDrive ? 'As faixas serão preparadas localmente no navegador para o core.' : 'As faixas serão empacotadas localmente para o core; nada é enviado.';
   notice.hidden = true;
 }
 
@@ -808,7 +820,7 @@ async function prepareRawBinCandidates(bins, allFiles, sequence) {
   ps1DiscChooser.hidden = false;
   document.querySelector('#ps1-firmware').hidden = false;
   document.querySelector('#selected-name').textContent = `${candidates.length} jogos/arquivos BIN sem CUE`;
-  document.querySelector('#selected-meta').textContent = `${allFiles.length} arquivos selecionados · ${fromDrive ? 'Google Drive, temporários na memória' : 'confira se cada BIN é um disco completo'}`;
+  document.querySelector('#selected-meta').textContent = `${allFiles.length} arquivos selecionados · ${fromDrive ? 'Google Drive, armazenamento temporário do navegador' : 'confira se cada BIN é um disco completo'}`;
   document.querySelector('#selected-system').textContent = 'PS1';
   document.querySelector('#selection-message').textContent = 'Arquivos BIN sem CUE foram listados. Faixas de disco podem exigir o CUE original para funcionar corretamente.';
   document.querySelector('#start-hint').textContent = 'Selecione um BIN e toque em “Preparar este jogo”.';
@@ -823,7 +835,7 @@ async function prepareDiscCandidate(candidate, sequence) {
   const mobileMemoryWarning = isAppleMobile && totalSize >= 300 * 1024 * 1024
     ? `Mídia PS1 grande (${formatBytes(totalSize)}). O iOS pode encerrar a aba por limite de memória; CHD costuma reduzir a pressão de memória.`
     : '';
-  ps1DiscStatus.textContent = mobileMemoryWarning || `Preparando ${candidate.title} ${fromDrive ? 'temporariamente da memória do Drive' : 'localmente'}…`;
+  ps1DiscStatus.textContent = mobileMemoryWarning || `Preparando ${candidate.title} ${fromDrive ? 'do armazenamento temporário do navegador' : 'localmente'}…`;
   document.querySelector('#start-game').disabled = true;
   try {
     if (sequence !== selectionSequence) return;
@@ -851,7 +863,7 @@ async function prepareDiscCandidate(candidate, sequence) {
     }
     if (fromDrive) driveMemoryFiles.add(gameFile);
     await prepareGame(gameFile, systems.find((system) => system.id === 'ps1'), candidate.title, sequence, externalFiles);
-    ps1DiscStatus.textContent = mobileMemoryWarning || (fromDrive ? 'Conjunto do Drive preparado temporariamente em memória.' : 'Conjunto de disco preparado localmente.');
+    ps1DiscStatus.textContent = mobileMemoryWarning || (fromDrive ? 'Conjunto do Drive preparado no armazenamento temporário do navegador.' : 'Conjunto de disco preparado localmente.');
     if (mobileMemoryWarning && pendingGame) {
       document.querySelector('#selected-meta').textContent += ` · ${mobileMemoryWarning}`;
     }
@@ -905,10 +917,10 @@ async function buildExternalDiscAssets(candidate) {
 async function prepareGame(file, system, title, sequence, externalFiles = {}) {
   const fromDrive = driveMemoryFiles.has(file);
   document.querySelector('#selected-name').textContent = title;
-  document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · ${fromDrive ? 'Google Drive, somente na memória desta sessão' : 'arquivos permanecem neste dispositivo'}`;
+  document.querySelector('#selected-meta').textContent = `${formatBytes(file.size)} · ${fromDrive ? 'Google Drive, armazenamento temporário do navegador' : 'arquivos permanecem neste dispositivo'}`;
   document.querySelector('#selected-system').textContent = system.short;
   document.querySelector('#ps1-firmware').hidden = system.id !== 'ps1';
-  document.querySelector('#selection-message').textContent = fromDrive ? 'ROM recebida do Drive. Verificando os dados temporários em memória…' : 'Arquivo recebido. Verificando leitura local…';
+  document.querySelector('#selection-message').textContent = fromDrive ? 'ROM recebida do Drive. Verificando o arquivo temporário…' : 'Arquivo recebido. Verificando leitura local…';
   document.querySelector('#start-hint').textContent = `Verificando ${title}…`;
   notice.hidden = false;
   try {
@@ -927,7 +939,7 @@ async function prepareGame(file, system, title, sequence, externalFiles = {}) {
   }
   pendingGame = { file, system, title, externalFiles };
   document.querySelector('#start-game').disabled = false;
-  document.querySelector('#selection-message').textContent = fromDrive ? 'Leitura em memória confirmada. Pressione “Iniciar jogo”.' : 'Leitura local confirmada. Pressione “Iniciar jogo”.';
+  document.querySelector('#selection-message').textContent = fromDrive ? 'Leitura confirmada no armazenamento temporário. Pressione “Iniciar jogo”.' : 'Leitura local confirmada. Pressione “Iniciar jogo”.';
   document.querySelector('#start-hint').textContent = `Pronto para iniciar: ${title}`;
   notice.textContent = fromDrive ? 'ROM pronta. Os dados do Drive ficam temporariamente nesta sessão e não são salvos.' : 'ROM pronta. O arquivo e as faixas continuam locais; nada foi enviado.';
 }
@@ -1344,8 +1356,14 @@ function handleEmulatorVisibility() {
 }
 
 function reportRuntimeFailure(message) {
-  if (!running || !/out of memory|allocation failed|memory access out of bounds|webassembly|webgl|context lost|abort/i.test(message)) return;
-  document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 180)}. Em iPhone/iPad, arquivos PS1 grandes podem exceder a memória disponível.`;
+  if (!running) return;
+  if (/out of memory|allocation failed|memory access out of bounds|webassembly|webgl|context lost|abort/i.test(message)) {
+    document.querySelector('#player-status').textContent = `O núcleo parou: ${message.slice(0, 160)}. Em iPhone/iPad, uma imagem PS1 grande pode exceder a memória disponível.`;
+    return;
+  }
+  if (/networkerror|failed to fetch|load failed|network request failed/i.test(message)) {
+    document.querySelector('#player-status').textContent = `Falha de rede ao carregar a ROM ou um recurso do núcleo: ${message.slice(0, 140)}. Se a aba reiniciar, o iPhone pode ter encerrado a sessão por falta de memória.`;
+  }
 }
 
 window.addEventListener('error', (event) => {
@@ -1359,9 +1377,10 @@ window.addEventListener('unhandledrejection', (event) => {
   logPs1Diagnostic('Promise rejeitada sem tratamento', { message, stack: reason?.stack });
   reportRuntimeFailure(message);
 });
-window.addEventListener('pagehide', () => {
+window.addEventListener('pagehide', (event) => {
   releaseGameObjectUrl();
   releaseExternalObjectUrls();
+  if (!event.persisted) void window.RetroGoogleDrive?.clearTemporaryFiles();
 });
 
 document.addEventListener('visibilitychange', handleEmulatorVisibility);

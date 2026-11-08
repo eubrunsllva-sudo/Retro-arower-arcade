@@ -1,18 +1,32 @@
 (() => {
   const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
   const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files/';
+  const CONFIG_URL = new URL('/api/google/config', window.location.origin);
+  const TOKEN_URL = new URL('/api/google/token', window.location.origin);
   let config = null;
-  let tokenClient = null;
+  let configPromise = null;
   let accessToken = '';
   let accessTokenExpiresAt = 0;
   let librariesPromise = null;
   let pickerReady = false;
+  let temporaryDirectoryPromise = null;
+  const temporaryDirectoryName = 'retro-drive-' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
 
-  function configure(nextConfig) {
-    config = nextConfig;
-    tokenClient = null;
-    accessToken = '';
-    accessTokenExpiresAt = 0;
+  async function loadConfig() {
+    if (config?.configured) return config;
+    if (configPromise) return configPromise;
+    configPromise = fetch(CONFIG_URL, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Não foi possível verificar a configuração Google (HTTP ${response.status}).`);
+        const next = await response.json();
+        config = next;
+        return next;
+      })
+      .catch((error) => {
+        configPromise = null;
+        throw error;
+      });
+    return configPromise;
   }
 
   function loadScript(id, src, ready) {
@@ -35,8 +49,10 @@
     });
   }
 
-  function warmup() {
+  async function warmup() {
     if (librariesPromise) return librariesPromise;
+    const settings = await loadConfig();
+    if (!settings.configured) throw new Error('O login do Google ainda está sendo configurado. Tente novamente depois que o administrador concluir a configuração.');
     librariesPromise = Promise.all([
       loadScript('google-gis-client', 'https://accounts.google.com/gsi/client', () => Boolean(window.google?.accounts?.oauth2)),
       loadScript('google-api-client', 'https://apis.google.com/js/api.js', () => Boolean(window.gapi)),
@@ -58,13 +74,17 @@
   function showPicker(resolve, reject, onStatus) {
     try {
       const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
-        .setIncludeFolders(false)
+        .setIncludeFolders(true)
         .setSelectFolderEnabled(false);
+      const pickerWidth = Math.max(566, Math.min(1051, window.innerWidth - 24));
+      const pickerHeight = Math.max(350, Math.min(650, window.innerHeight - 40));
       const picker = new window.google.picker.PickerBuilder()
         .setAppId(config.projectNumber)
         .setDeveloperKey(config.apiKey)
         .setOAuthToken(accessToken)
         .setOrigin(window.location.origin)
+        .setLocale('pt-BR')
+        .setSize(pickerWidth, pickerHeight)
         .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
         .addView(view)
         .setCallback((data) => {
@@ -72,60 +92,148 @@
           else if (data.action === window.google.picker.Action.CANCEL) resolve([]);
         })
         .build();
-      onStatus('Escolha uma ROM. Para PS1 em CUE, selecione também todos os arquivos BIN citados pelo CUE.');
+      onStatus('Conta Google conectada. Escolha uma ROM; para PS1 em CUE, selecione também os BIN citados pelo CUE.');
       picker.setVisible(true);
     } catch (error) {
       reject(error);
     }
   }
 
-  function pickFiles(onStatus = () => {}) {
-    if (!config?.clientId || !config?.apiKey || !/^\d+$/.test(config?.projectNumber || '')) {
-      return Promise.reject(new Error('Configure o Client ID, a chave da API e o número do projeto Google Cloud.'));
+  async function exchangeCode(code) {
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XmlHttpRequest',
+      },
+      body: JSON.stringify({ code }),
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.access_token) {
+      const message = result.description || result.error;
+      throw new Error(message === 'google_oauth_not_configured'
+        ? 'O login ainda não foi configurado no Cloudflare.'
+        : `O Google não concluiu a autorização${message ? `: ${message}` : '.'}`);
     }
+    return result;
+  }
+
+  async function pickFiles(onStatus = () => {}) {
+    const settings = await loadConfig();
+    if (!settings.configured) throw new Error('O login do Google ainda não está configurado neste site.');
     if (!pickerReady || !window.google?.accounts?.oauth2) {
-      return Promise.reject(new Error('As bibliotecas do Google ainda estão carregando. Toque novamente em “Escolher no Google Drive” daqui a pouco.'));
+      throw new Error('As bibliotecas do Google ainda estão carregando. Toque novamente em “Escolher ROM no Google Drive” daqui a pouco.');
     }
     return new Promise((resolve, reject) => {
-      if (!tokenClient) {
-        tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: config.clientId,
-          scope: DRIVE_SCOPE,
-          callback: (response) => {
-            if (response.error) return reject(new Error(`Falha na autorização do Google: ${response.error_description || response.error}`));
-            accessToken = response.access_token;
-            accessTokenExpiresAt = Date.now() + Math.max(0, Number(response.expires_in || 3600) - 60) * 1000;
+      const codeClient = window.google.accounts.oauth2.initCodeClient({
+        client_id: settings.clientId,
+        scope: DRIVE_SCOPE,
+        ux_mode: 'popup',
+        select_account: true,
+        callback: async (response) => {
+          if (response.error || !response.code) {
+            reject(new Error(`Falha na autorização do Google: ${response.error_description || response.error || 'nenhum código de autorização recebido'}`));
+            return;
+          }
+          try {
+            onStatus('Validando a autorização com segurança…');
+            const token = await exchangeCode(response.code);
+            accessToken = token.access_token;
+            accessTokenExpiresAt = Date.now() + Math.max(0, Number(token.expires_in || 3600) - 60) * 1000;
             showPicker(resolve, reject, onStatus);
-          },
-          error_callback: (error) => reject(new Error(`A janela de autorização do Google foi bloqueada ou cancelada: ${error?.message || error?.type || 'tente novamente'}`)),
-        });
-      }
-      onStatus('Conectando à sua conta Google…');
-      tokenClient.requestAccessToken({ prompt: accessToken && Date.now() < accessTokenExpiresAt ? '' : 'consent' });
+          } catch (error) {
+            reject(error);
+          }
+        },
+        error_callback: (error) => reject(new Error(`A janela oficial do Google foi bloqueada ou fechada: ${error?.message || error?.type || 'tente novamente'}`)),
+      });
+      onStatus('Abrindo a janela oficial do Google…');
+      codeClient.requestCode();
     });
   }
 
-  async function readFile(doc) {
-    if (!accessToken) throw new Error('Conecte-se novamente ao Google Drive para ler esse arquivo.');
-    const url = `${DRIVE_FILES_URL}${encodeURIComponent(doc.id)}?alt=media&supportsAllDrives=true`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (response.status === 401) {
+  async function readFile(doc, onProgress = () => {}) {
+    if (!accessToken || Date.now() >= accessTokenExpiresAt) {
       accessToken = '';
       accessTokenExpiresAt = 0;
-      throw new Error('A autorização do Google expirou. Toque novamente em “Escolher no Google Drive” e autorize a conta.');
+      throw new Error('A autorização expirou. Toque novamente em “Escolher ROM no Google Drive” e conecte a conta.');
     }
-    if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
-    if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
-    const blob = await response.blob();
-    if (!blob.size) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
-    return new File([blob], doc.name, { type: doc.mimeType || blob.type || 'application/octet-stream', lastModified: Date.now() });
+    if (!navigator.storage?.getDirectory || typeof ReadableStream === 'undefined') {
+      throw new Error('Este navegador não oferece armazenamento temporário em fluxo. Atualize o navegador ou abra a ROM localmente; o download em memória foi desativado para evitar que a aba reinicie.');
+    }
+    if (!temporaryDirectoryPromise) {
+      temporaryDirectoryPromise = navigator.storage.getDirectory()
+        .then((root) => root.getDirectoryHandle(temporaryDirectoryName, { create: true }))
+        .catch((error) => {
+          temporaryDirectoryPromise = null;
+          if (error?.name === 'QuotaExceededError') throw new Error('Não há espaço temporário disponível no navegador para esta ROM. Libere espaço no aparelho ou selecione um arquivo menor.');
+          throw new Error(`O navegador não conseguiu criar o arquivo temporário da ROM: ${error?.message || 'armazenamento indisponível'}.`);
+        });
+    }
+    const sessionDirectory = await temporaryDirectoryPromise;
+    const cleanName = String(doc.name || 'rom.bin').replace(/[\/\\\0]/g, '_').replace(/^\.+/, '_') || 'rom.bin';
+    const fileDirectory = await sessionDirectory.getDirectoryHandle(crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`, { create: true });
+    let writer;
+    let reader;
+    try {
+      const response = await fetch(`${DRIVE_FILES_URL}${encodeURIComponent(doc.id)}?alt=media&supportsAllDrives=true`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      });
+      if (response.status === 401) {
+        accessToken = '';
+        accessTokenExpiresAt = 0;
+        throw new Error('A autorização do Google expirou. Toque novamente em “Escolher ROM no Google Drive” e autorize a conta.');
+      }
+      if (response.status === 403) throw new Error(`O Google Drive não permitiu ler “${doc.name}”. Confira o acesso e se o download é permitido para esse arquivo.`);
+      if (!response.ok) throw new Error(`Falha ao ler “${doc.name}” no Google Drive (HTTP ${response.status}).`);
+      if (!response.body?.getReader) throw new Error('O navegador não disponibilizou a transferência em fluxo. Atualize o navegador e tente novamente.');
+      const total = Number(response.headers.get('content-length')) || Number(doc.sizeBytes) || 0;
+      const fileHandle = await fileDirectory.getFileHandle(cleanName, { create: true });
+      writer = await fileHandle.createWritable();
+      reader = response.body.getReader();
+      let loaded = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await writer.write(value);
+        loaded += value.byteLength;
+        onProgress(loaded, total);
+      }
+      await writer.close();
+      if (!loaded) throw new Error(`“${doc.name}” está vazio ou o Drive não retornou seu conteúdo.`);
+      const file = await fileHandle.getFile();
+      onProgress(loaded, total || loaded);
+      return file;
+    } catch (error) {
+      try { await reader?.cancel(); } catch { /* transferência já encerrada */ }
+      try { await writer?.abort(); } catch { /* arquivo parcial será removido abaixo */ }
+      try { await sessionDirectory.removeEntry(fileDirectory.name, { recursive: true }); } catch { /* limpeza best effort */ }
+      if (error?.name === 'QuotaExceededError') throw new Error('O navegador ficou sem espaço temporário durante o download. Libere espaço no aparelho e tente novamente.');
+      if (error instanceof TypeError) throw new Error(`Falha de rede ao baixar “${doc.name}” do Google Drive. Verifique a conexão e tente novamente.`);
+      throw error;
+    }
+  }
+
+  async function clearTemporaryFiles() {
+    if (!temporaryDirectoryPromise) return;
+    try {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry(temporaryDirectoryName, { recursive: true });
+      temporaryDirectoryPromise = null;
+    } catch { /* limpeza best effort ao encerrar a aba */ }
   }
 
   function disconnect() {
+    const token = accessToken;
     accessToken = '';
     accessTokenExpiresAt = 0;
-    tokenClient = null;
+    if (token && window.google?.accounts?.oauth2?.revoke) {
+      window.google.accounts.oauth2.revoke(token, () => {});
+    }
   }
 
-  window.RetroGoogleDrive = { configure, warmup, pickFiles, readFile, disconnect };
+  window.RetroGoogleDrive = { loadConfig, warmup, pickFiles, readFile, disconnect, clearTemporaryFiles };
 })();

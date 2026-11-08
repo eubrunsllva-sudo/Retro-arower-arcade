@@ -1,40 +1,70 @@
-# Acessar ROMs no Google Drive
+# Conectar o Google Drive
 
-## O que a integração faz
+## Como o fluxo funciona
 
-A opção **Escolher ROM no Google Drive** abre o seletor oficial do Google. Depois da autorização, o usuário escolhe os arquivos que deseja abrir. O app solicita acesso apenas aos itens escolhidos (`drive.file`), lê o conteúdo pela Drive API e o mantém temporariamente na memória da aba para entregar ao EmulatorJS como um arquivo local de sessão. Nenhum arquivo é gravado no aparelho, enviado a um servidor deste projeto ou publicado no repositório.
+### Navegação no seletor
 
-O navegador ainda recebe os bytes da ROM pela rede e mantém dados na memória durante a emulação; esta integração elimina a etapa de baixar/salvar manualmente a ROM no armazenamento do aparelho, não o tráfego nem o uso de RAM. Arquivos PS1 grandes podem exceder a memória disponível, especialmente no iPhone. CUE/BIN exige selecionar o CUE e todos os BIN referenciados no mesmo Picker; M3U requer as listas e imagens relacionadas.
+O seletor oficial do Google agora exibe pastas e permite abri-las para navegar até as ROMs, em português do Brasil. Pastas não podem ser escolhidas como se fossem ROMs: selecione os arquivos de jogo dentro delas. A janela e o visual do seletor são fornecidos pelo Google; o aplicativo não consegue transformá-los na interface completa do Google Drive. Arquivos que o seletor lista podem incluir saves e outros formatos; escolha uma ROM compatível com o console selecionado.
 
-GBC, GBA e PS1 são os consoles ativos que a integração reconhece nesta etapa. Os demais continuam planejados. A emulação ainda ocorre no próprio navegador.
+1. A pessoa toca em **Escolher ROM no Google Drive**.
+2. O Google abre a janela oficial para escolher a conta e autorizar acesso.
+3. O app solicita somente o escopo https://www.googleapis.com/auth/drive.file, recomendado pelo Google para acesso por arquivo. O seletor oficial entrega ao app somente os arquivos escolhidos.
+4. O navegador envia o código OAuth de uso único à função do Cloudflare Pages. A função troca esse código por um token temporário usando o Client Secret armazenado como segredo no Cloudflare.
+5. O token fica somente na memória da aba e é usado para ler os arquivos escolhidos pela Drive API. Ao encerrar ou recarregar a sessão, ele é descartado; não armazenamos refresh tokens nem ROMs no servidor.
 
-## Criar as credenciais
+A ROM é transferida do Google Drive para a memória do navegador para a emulação. Isso não elimina o tráfego de rede nem o consumo de memória; arquivos PS1 grandes podem exceder os limites do iPhone/iPad. CUE/BIN exige selecionar juntos o CUE e todos os BIN citados; para M3U, selecione também os discos correspondentes.
 
-A integração no front-end precisa de identificadores do Google Cloud do proprietário do site. Eles não são senhas e não existe Client Secret no código do navegador.
+## O que nunca colocar no código ou enviar pelo chat
 
-1. No [Google Cloud Console](https://console.cloud.google.com/), crie ou selecione um projeto.
-2. Ative **Google Drive API** e **Google Picker API** em APIs e serviços.
-3. Configure a tela de consentimento OAuth. Para uso próprio, deixe o app em modo de teste e adicione a sua conta Google como usuário de teste.
-4. Crie um OAuth Client ID do tipo **Web application**. Em **Authorized JavaScript origins**, adicione:
-   - `https://eubrunsllva-sudo.github.io`
-   - `http://localhost:8000` para desenvolvimento local
-5. Crie uma chave de API. Restrinja-a a sites (`https://eubrunsllva-sudo.github.io/*`, `https://docs.google.com/*` e, se necessário, `http://localhost:8000/*`) e às APIs Google Drive e Google Picker.
-6. Copie o **Client ID**, a **API key** e o **Project number**. O número do projeto é diferente do nome/ID textual do projeto.
-7. Abra **Configurar acesso ao Google Drive** no app, cole esses três valores e toque em **Salvar configuração**. Depois toque em **Escolher ROM no Google Drive**, autorize a conta e escolha o jogo.
+- **Client Secret**: segredo confidencial. Cadastre somente em Cloudflare Pages como secret. Não o inclua em arquivos, commits, mensagens ou capturas de tela.
+- Client ID, número do projeto e API key são identificadores públicos, mas a API key precisa de restrições por origem e por API no Google Cloud.
+- O app nunca pede a senha Google. Digite a senha somente na página oficial accounts.google.com.
 
-O OAuth do app usa apenas o escopo `https://www.googleapis.com/auth/drive.file`. O Picker recebe o token de acesso e o identificador do projeto. Restrinja a chave conforme a [documentação oficial do Picker para web](https://developers.google.com/workspace/drive/picker/guides/web-picker) e configure a autorização conforme o [guia de OAuth para aplicações web](https://developers.google.com/identity/oauth2/web/guides/overview).
+## Configurar Google Cloud
 
-## Dados e privacidade
+Crie um projeto dedicado chamado, por exemplo, **Retro Arcade**. Não use o projeto de outro aplicativo.
 
-- Client ID, API key e número do projeto ficam no `localStorage` deste navegador, para você não precisar digitá-los em cada visita. A chave API deve ter restrições de origem e de APIs no Google Cloud.
-- O token OAuth fica apenas na memória da aba e não é colocado em `localStorage`.
-- O app acessa o conteúdo do arquivo escolhido via `files.get?alt=media`, conforme a [documentação de download da Drive API](https://developers.google.com/workspace/drive/api/guides/manage-downloads).
-- **Limpar sessão** remove o token de acesso mantido nesta aba; a configuração de identificadores continua salva neste navegador.
-- Ao fechar ou recarregar a aba, os objetos temporários de arquivo e o token em memória são descartados pelo navegador.
+1. Ative **Google Drive API** e **Google Picker API** em APIs e serviços.
+2. Configure a tela de consentimento OAuth com o nome e o domínio do Retro Arcade. Para validar primeiro com sua conta, deixe o público como **External** e o status de publicação em **Testing**; adicione o endereço da sua conta como usuário de teste.
+3. Crie credenciais OAuth do tipo **Web application**.
+4. Em **Authorized JavaScript origins**, cadastre exatamente:
+   - https://retroarcade.xyz.br
+   - http://localhost:8000 somente para desenvolvimento local.
+   
+   O fluxo popup usa a origem da página como redirect URI; não é necessário cadastrar um redirect path. Se testar uma prévia pages.dev, cadastre a origem exata dessa prévia também e remova-a ao terminar.
+5. Crie uma API key e restrinja-a a **Websites/HTTP referrers**. Autorize somente https://retroarcade.xyz.br/*, https://docs.google.com/* (se exigido pelo Picker) e http://localhost:8000/* para desenvolvimento. Restrinja também as APIs à Drive API e Picker API.
+6. Anote o OAuth Client ID, a API key, o número numérico do projeto e o Client Secret. Não confunda o número com o nome/ID textual do projeto.
 
-## Limites desta branch
+O escopo drive.file é não sensível e mais restrito que acesso total ao Drive. A verificação de marca/domínio do Google ainda pode ser necessária antes de abrir o app ao público. Manter o app em Testing com sua conta cadastrada serve para validar o uso pessoal, mas não equivale à aprovação pública do Google.
 
-- A integração requer configurar um projeto Google Cloud; este repositório não contém credenciais de OAuth/API de terceiros.
-- O teste real de autorização, Picker e leitura depende de credenciais próprias, conta de teste autorizada e uso do site em HTTPS ou `localhost`.
-- GitHub Pages não é um servidor de emulação; apenas hospeda o front-end estático. O core continua executando localmente no dispositivo.
-- Selecionar muitos arquivos PS1 ou uma imagem grande pode consumir muita memória. Para CUE, selecione apenas o CUE e seus arquivos necessários. No iOS, considere imagens menores e valide no aparelho.
+## Configurar Cloudflare Pages
+
+No painel Cloudflare: **Workers e Pages → retro-arower-arcade → Settings → Variables and Secrets**. Configure no ambiente **Production**:
+
+| Nome | Tipo | Valor |
+| --- | --- | --- |
+| GOOGLE_CLIENT_ID | Variable | OAuth Client ID do app Web |
+| GOOGLE_API_KEY | Variable | API key restrita |
+| GOOGLE_PROJECT_NUMBER | Variable | número numérico do projeto Google Cloud |
+| GOOGLE_CLIENT_SECRET | Secret | Client Secret do app Web |
+
+Salve e publique/reimplante a implantação. Para prévias de branch, configure os valores também no ambiente **Preview**, usando uma origem OAuth autorizada para a URL de prévia. O endpoint /api/google/config publica somente os três identificadores públicos; nunca retorna o Client Secret. O endpoint /api/google/token só aceita POST da própria origem do site, exige o cabeçalho anti-CSRF usado no popup GIS e não grava tokens.
+
+## Verificação ponta a ponta
+
+Depois de publicar uma versão que inclui functions/api/google/:
+
+1. Abra https://retroarcade.xyz.br e confirme que o status Google diz **Pronto**.
+2. Toque em **Escolher ROM no Google Drive**, escolha sua conta no domínio oficial do Google e autorize.
+3. Selecione primeiro um arquivo pequeno e legítimo do seu Drive com extensão GBC/GBA para validar o fluxo.
+4. Confira que o jogo aparece selecionado e inicia. O arquivo permanece apenas na memória do navegador.
+5. Use **Limpar sessão do Google** para descartar o token em memória. A permissão concedida também pode ser revogada em [Segurança da Conta Google → conexões com terceiros](https://myaccount.google.com/connections).
+
+Se aparecer erro, registre apenas a mensagem e o código (por exemplo origin_mismatch, access_denied, HTTP 403). Nunca compartilhe tokens, Client Secret ou o conteúdo de uma ROM.
+
+## Fontes oficiais
+
+- [Google Identity Services: fluxo de código para aplicações web](https://developers.google.com/identity/oauth2/web/guides/use-code-model)
+- [Escolher escopos da Drive API](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)
+- [Google Picker para a Web](https://developers.google.com/workspace/drive/picker/guides/web-picker)
+- [Políticas OAuth do Google](https://developers.google.com/identity/protocols/oauth2/policies)

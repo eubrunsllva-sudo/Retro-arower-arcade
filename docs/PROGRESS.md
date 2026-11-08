@@ -1,5 +1,35 @@
 # Registro de progresso
 
+## 2026-11-07 — Reduzir pressão de memória ao abrir ROM do Drive no iPhone
+
+- O fluxo anterior montava a ROM como uma lista de blocos binários JavaScript e depois criava um `File`. Para imagens PS1 grandes, isso podia manter uma cópia temporária extra antes de o EmulatorJS transferir o arquivo para o núcleo WebAssembly; no iPhone, o WebKit pode encerrar/recarregar a aba quando a memória disponível acaba.
+- Ajuste: a leitura do Drive agora usa `XMLHttpRequest` com resposta `Blob` e progresso, evitando manter os blocos da ROM em um array JavaScript. Erros HTTP e falhas de rede continuam com mensagens específicas.
+- Limite conhecido: o núcleo ainda precisa carregar a imagem para a memória do emulador. Uma ISO grande pode exceder a memória disponível do iPhone mesmo com esse pico temporário reduzido; não é possível prometer compatibilidade universal para imagens grandes em todos os aparelhos.
+- O texto de erro de rede do núcleo também passa a ser tratado no diagnóstico da página, para distinguir falha de carregamento de um encerramento silencioso por memória quando o navegador reportar a causa.
+- Estado: correção local na branch `fix/google-picker-cache-bust`; precisa ser publicada e confirmada no iPhone com a ROM afetada e o tamanho exato do arquivo.
+
+## 2026-11-07 — Google Drive no celular: estado da seleção e transferência
+
+- Causa do aviso confuso: uma mensagem de erro da tentativa anterior podia permanecer visível durante a transferência da nova ROM do Drive. Em ISOs grandes, a transferência pode demorar e dar a impressão de que a nova seleção falhou.
+- Ajuste: limpar o aviso anterior ao iniciar uma nova seleção; identificar formatos PS1 antes do download; mostrar bytes transferidos; só afirmar que a ROM está pronta quando a preparação concluir.
+- Seletor móvel: tamanho preferido agora acompanha a janela do navegador. O Google Picker tem largura mínima documentada de 566 px e escolhe quais colunas exibe; em retrato, pode ocultar proprietário/data. A aplicação não controla o conteúdo interno do seletor hospedado pelo Google.
+- Limite de desempenho: o jogo do Drive precisa ser transferido para a memória do aparelho antes da inicialização. ISOs grandes levam mais tempo, especialmente no celular; o progresso passa a ficar visível. O núcleo de emulação PS1 não foi alterado.
+- Estado: alteração local na branch `fix/google-picker-cache-bust`; publicação no domínio e confirmação no iPhone ainda pendentes.
+
+## 2026-11-07 — Evitar JavaScript antigo em cache
+
+- O arquivo publicado em `main` contém pastas habilitadas e locale `pt-BR`, mas a captura ainda mostrava o seletor anterior em inglês.
+- Causa provável: `index.html` continuava requisitando os scripts com a mesma query de versão. Navegadores podiam reutilizar uma cópia antiga em cache.
+- Correção nesta branch: atualizar as URLs versionadas de `google-drive.js` e `app.js` para forçar uma nova requisição após o deploy.
+- Estado: aguardando PR/mesclagem, deploy e confirmação visual no navegador.
+
+## 2026-11-07 — Navegação de pastas do Google Drive
+
+- Causa encontrada: a configuração do Google Picker ocultava pastas (`setIncludeFolders(false)`), impedindo navegar pela estrutura do Drive e chegar a diretórios como `ROOM GAMES/ps1`.
+- Correção nesta branch: pastas passam a aparecer e ser navegáveis; continuam sem poder ser escolhidas como arquivo. O Picker foi configurado para português do Brasil.
+- Limitação: o Google controla o visual e a interface do Picker; ele não pode ser convertido na página completa do Drive. Depois do deploy, confirmar que as pastas aparecem e abrir uma ROM dentro de uma pasta.
+- Estado: alteração de código feita; publicação e validação no site ainda pendentes.
+
 ## 2026-11-06 — Etapa 1: base web
 
 ### Feito
@@ -263,3 +293,31 @@ Executar homebrew de teste e validar touch, teclado/gamepad, áudio, restart, sa
 - Nenhuma ROM ou token é gravado no aparelho ou enviado ao backend do projeto. A ROM ainda trafega pela rede e usa memória durante a sessão; a emulação permanece no dispositivo e arquivos grandes podem exceder os limites de memória do navegador.
 - Documentado o setup do Google Cloud em `docs/GOOGLE_DRIVE.md`, incluindo restrições da API key, origem GitHub Pages e `localhost`.
 - Limite de verificação: os IDs/credenciais Google do proprietário ainda não foram configurados; portanto, a autorização real e a seleção do Picker precisam de validação na branch com o projeto Cloud do usuário.
+
+
+## 2026-11-07 — Etapa: autenticação segura do Google Drive (branch experimental)
+
+### Feito
+
+- Criada a branch `feature/google-drive-secure-login`; ela ainda não substitui a versão de produção.
+- Removidos do formulário público os campos de Client ID, API key e número do projeto. A página agora mostra o estado da conexão e oferece limpar a sessão.
+- Preparado o fluxo Google Identity Services Authorization Code em janela oficial, com troca do código numa Cloudflare Pages Function.
+- O escopo continua limitado a `drive.file`; o Client Secret fica no ambiente do Cloudflare, tokens são temporários e não são guardados no navegador ou servidor.
+- Adicionados endpoints Pages em `functions/api/google/config.js` e `functions/api/google/token.js`, com origem permitida, cabeçalho anti-CSRF, validação de método e resposta sem cache.
+- Atualizada a documentação para o domínio `retroarcade.xyz.br`, variáveis de produção/preview e limites de privacidade.
+
+### O que falta
+
+- Criar um projeto Google Cloud dedicado ao Retro Arcade, habilitar Drive API e Picker API e configurar OAuth.
+- Cadastrar as variáveis no Cloudflare Pages: GOOGLE_CLIENT_ID, GOOGLE_API_KEY, GOOGLE_PROJECT_NUMBER e GOOGLE_CLIENT_SECRET (este último como **Secret**, nunca no Git).
+- Fazer deploy da branch de teste e validar autorização, Picker, leitura de um arquivo pequeno e início de jogo. Ainda não foi possível validar a autenticação real sem as credenciais do proprietário.
+- Após validação, integrar a branch à produção Cloudflare. O GitHub Pages antigo ainda precisa ser despublicado nas configurações do repositório.
+- Verificação de sintaxe JavaScript concluída para o app, módulo Drive e duas Pages Functions; isso não substitui o teste OAuth real no navegador.
+
+## 2026-11-07 — Download do Google Drive em fluxo para iOS
+
+- Relato: no Chrome do iPhone, a aba reiniciava ao terminar de receber ROMs do Drive. A interface registrava o progresso do download e depois perdia todo o estado. O aplicativo não contém redirecionamento/reload automático nesse fluxo; a hipótese mais provável é encerramento da aba pelo WebKit quando a resposta inteira, o Blob e a cópia interna do núcleo disputam memória. Esse encerramento pode ocorrer sem erro JS observável.
+- Alteração: o download agora usa `fetch()` com leitura por fluxo e grava os blocos diretamente no Origin Private File System (OPFS) temporário do próprio site. O código não monta o arquivo inteiro em um Blob novo durante a transferência. Nomes e extensões originais são preservados para detecção de ROM, CUE e faixas BIN; erros de rede, autorização, quota e falta de suporte são mostrados na página.
+- Atualizados os textos da interface e os identificadores de cache do módulo Drive e do app para impedir que o navegador reutilize a implementação antiga.
+- Limitação: o EmulatorJS ainda precisa carregar a imagem no núcleo WebAssembly para emular. OPFS reduz o pico durante o download, mas não elimina o limite de memória do iOS na etapa seguinte. O resultado precisa ser confirmado no iPhone com uma ROM menor e depois com a ISO de 648 MB; não foi possível reproduzir o encerramento neste ambiente.
+- Se a sessão for concluída, os arquivos ficam no armazenamento privado temporário deste site, não são enviados ao servidor do projeto nem apresentados como armazenamento permanente.
